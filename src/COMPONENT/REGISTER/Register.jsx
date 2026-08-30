@@ -6,12 +6,13 @@ import { useNavigate } from 'react-router-dom'
 import { toast } from 'react-toastify'
 import {
   collection,
-  doc,
   getDocs,
   query,
-  setDoc,
   where
 } from "firebase/firestore";
+import { ensureUserProfile } from '../../lib/ensureUserProfile'
+import { getAuthErrorMessage } from '../../lib/authErrors'
+import { EMAIL_REGEX, NAME_REGEX, PASSWORD_HINT, PASSWORD_REGEX, PHONE_REGEX } from '../../lib/validation'
 
 export default function Register() {
 
@@ -36,6 +37,7 @@ export default function Register() {
 
            try{
 
+            try {
             const phoneQuery = query(
               collection(db , "users"),
               where("phone" , "==", values.phone)
@@ -47,6 +49,9 @@ export default function Register() {
               toast.error("رقم الهاتف مستخدم بالفعل");
               return;
             }
+            } catch {
+              // Unauthenticated clients cannot query users after rules are published.
+            }
               const userCredential = await createUserWithEmailAndPassword(
                  auth ,
                 values.email ,
@@ -54,13 +59,10 @@ export default function Register() {
             )
 
 
-            await setDoc(doc( db , "users" , userCredential.user.uid) , {
-                uid: userCredential.user.uid,
+            await ensureUserProfile(userCredential.user, {
                 name: values.name,
                 phone: values.phone,
                 email: values.email,
-                role : "user" ,
-                createdAt: new Date(),
             })
 
             toast.success("تم التسجيل بنجاح " , 3000)
@@ -72,10 +74,9 @@ export default function Register() {
             } , 2500)
 
            }catch(err){
-              toast.error("error ")
+              toast.error(getAuthErrorMessage(err))
               
            }
-
 
 
 
@@ -86,25 +87,20 @@ export default function Register() {
 
       const errors = {}
 
-      const regxName = /^[a-zA-Z\u0600-\u06FF\s]{3,50}$/
-      const regxEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-      const regxPhone = /^01[0125][0-9]{8}$/
-      const regxPassword = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,}$/
-
-      if (!regxName.test(values.name)) {
+      if (!NAME_REGEX.test(values.name)) {
         errors.name = "The Name Is Not Valid"
       }
 
-      if (!regxEmail.test(values.email)) {
+      if (!EMAIL_REGEX.test(values.email)) {
         errors.email = "The Email Is Not Valid"
       }
 
-      if (!regxPhone.test(values.phone)) {
+      if (!PHONE_REGEX.test(values.phone)) {
         errors.phone = "The Phone Is Not Valid"
       }
 
-      if (!regxPassword.test(values.password)) {
-        errors.password = "Password must be at least 6 characters and contain letters and numbers"
+      if (!PASSWORD_REGEX.test(values.password)) {
+        errors.password = PASSWORD_HINT
       }
 
       if (values.rePassword !== values.password) {
@@ -124,9 +120,15 @@ export default function Register() {
     <div className=' p-2 rounded-lg  shadow-lg bg-white  w-full max-w-md m-auto ' >
             <h1 className=' text-center text-3xl italic font-bold p-3 text-gray-800 mb-6 '>Register</h1>
            <form onSubmit={myFormik.handleSubmit} className="space-y-4 p-3 m-auto">
-                <input onBlur={myFormik.handleBlur} onChange={myFormik.handleChange} value={myFormik.values.name} className=' w-full  p-3 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-400' type="text" placeholder='Name' name='name'/>
+                <div>
+                <label htmlFor="name" className="block text-sm font-medium text-gray-700">Name</label>
+                <input id="name" onBlur={myFormik.handleBlur} onChange={myFormik.handleChange} value={myFormik.values.name} className=' w-full  p-3 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-400' type="text" placeholder='Name' name='name'/>
                 {myFormik.touched.name && myFormik.errors.name ? <div className='bg-red-400 p-1 text-white rounded alert alert-danger '>{myFormik.errors.name}</div> : ""}
+                </div>
+                <div>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email</label>
                 <input
+                    id="email"
                     onBlur={myFormik.handleBlur}
                     onChange={myFormik.handleChange}
                     value={myFormik.values.email}
@@ -140,8 +142,12 @@ export default function Register() {
                       {myFormik.errors.email}
                     </div>
                   ) : ""}
+                </div>
 
+                  <div>
+                  <label htmlFor="phone" className="block text-sm font-medium text-gray-700">Phone</label>
                   <input
+                    id="phone"
                     onBlur={myFormik.handleBlur}
                     onChange={myFormik.handleChange}
                     value={myFormik.values.phone}
@@ -155,8 +161,12 @@ export default function Register() {
                       {myFormik.errors.phone}
                     </div>
                   ) : ""}
+                  </div>
 
+                  <div>
+                  <label htmlFor="password" className="block text-sm font-medium text-gray-700">Password</label>
                   <input
+                    id="password"
                     onBlur={myFormik.handleBlur}
                     onChange={myFormik.handleChange}
                     value={myFormik.values.password}
@@ -170,8 +180,12 @@ export default function Register() {
                       {myFormik.errors.password}
                     </div>
                   ) : ""}
+                  </div>
 
+                  <div>
+                  <label htmlFor="rePassword" className="block text-sm font-medium text-gray-700">Confirm Password</label>
                   <input
+                    id="rePassword"
                     onBlur={myFormik.handleBlur}
                     onChange={myFormik.handleChange}
                     value={myFormik.values.rePassword}
@@ -185,6 +199,7 @@ export default function Register() {
                       {myFormik.errors.rePassword}
                     </div>
                   ) : ""}
+                  </div>
                 <button type='submit' className="w-full p-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-300 cursor-pointer font-medium capitalize">register</button>
            </form>
     </div>

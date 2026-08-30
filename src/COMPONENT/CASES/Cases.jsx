@@ -1,240 +1,193 @@
-import React, { useContext, useEffect, useState } from "react";
-import { Plus, Search } from "lucide-react";
-import CaseModal from "../CASE-MODAL/CaseModal";
-import { collection, deleteDoc, doc, getDocs  , updateDoc} from "firebase/firestore";
-import { db } from "../../firebase";
+import { useEffect, useState } from "react";
+import { collection, doc, getDocs, updateDoc } from "firebase/firestore";
 import { toast } from "react-toastify";
-import { AuthContext } from "../CONTEXT/Context";
-// import { Dialog, DialogBackdrop, DialogPanel, DialogTitle } from '@headlessui/react'
-import DeletCaseModal from "../DeleteCaseModal/DeletCaseModal";
-import CaseDetailsModal from "../CASE-DETELS-MODAL/CaseDetailsModal";
+import { db } from "../../firebase";
+import CaseModal from "../CASE-MODAL/CaseModal";
+import CaseDrawer from "../CASE-DRAWER/CaseDrawer";
+import { ConfirmDialog } from "../UI/ConfirmDialog.jsx";
+import { Button } from "../UI/Button.jsx";
+import { StatusBadge } from "../UI/StatusBadge.jsx";
+import { PageHeading } from "../UI/PageHeading.jsx";
+import { MSG } from "../../lib/validation.js";
 
 export default function Cases() {
   const [open, setOpen] = useState(false);
-  const [openDeletCase , setOpenDeletCase] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [sortStatus, setSortStatus] = useState("");
   const [cases, setCases] = useState([]);
-  const [selectedCase, setSelectedCase] = useState(null)
-  const [openDetails, setOpenDetails] = useState(false);
-  const {getStatus } = useContext(AuthContext)
-
-  
-  const getCases  = async()=>{
-
-    try{
-        const querySnapshot = await getDocs(collection(db, "cases"));
-
-        const data = querySnapshot.docs.map((doc)=>({
-           id: doc.id,
-           ...doc.data(),
-           
-        }))
-
-        .filter((item) => item.archived !== true);
-
-          setCases(data)
-    }catch(err){
-        console.log(err);
-        
-    }
-  }
+  const [selectedCase, setSelectedCase] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-  getCases();
-}, []);
+    document.title = "الحالات — جمعية الهداية";
+  }, []);
 
+  const getCases = async () => {
+    try {
+      const querySnapshot = await getDocs(collection(db, "cases"));
+      const data = querySnapshot.docs
+        .map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }))
+        .filter((item) => item.archived !== true);
+      setCases(data);
+    } catch {
+      toast.error(MSG.network);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-const handleDelete = async (id) => {
-  if (!id) {
-    toast.error("لم يتم تحديد الحالة");
-    return;
-  }
+  useEffect(() => {
+    getCases();
+  }, []);
 
-  try {
-    await updateDoc(doc(db, "cases", id) ,{
-      archived : true
-    });
+  const handleArchive = async () => {
+    if (!selectedCase?.id) return;
+    try {
+      await updateDoc(doc(db, "cases", selectedCase.id), { archived: true });
+      setCases((prev) => prev.filter((item) => item.id !== selectedCase.id));
+      setDrawerOpen(false);
+      setSelectedCase(null);
+      toast.success("تم نقل الحالة إلى الأرشيف");
+    } catch {
+      toast.error(MSG.network);
+    }
+  };
 
-    setCases((prevCases) =>
-      prevCases.filter((caseItem) => caseItem.id !== id)
-    );
+  const filteredCases = cases.filter((item) => {
+    const searchTerm = search.toLowerCase();
+    const matchesSearch =
+      item.userName?.toLowerCase().includes(searchTerm) ||
+      item.nationalId?.includes(searchTerm) ||
+      item.phone?.includes(searchTerm);
+    const matchesStatus =
+      sortStatus === "" || sortStatus === "all" || item.status === sortStatus;
+    return matchesSearch && matchesStatus;
+  });
 
-    setOpenDeletCase(false);
-    setSelectedCase(null);
-
-    toast.success("تم نقل الحالة إلى المهملات");
-  } catch (err) {
-    toast.error("فشل نقل الحالة إلى المهملات");
-  }
-};
-
-
-const filteredCases  = cases.filter((item)=>{
-  const searchTerm = search.toLowerCase();
-  const matchesSearch = 
-    item.userName?.toLowerCase().includes(searchTerm) ||
-    item.nationalId.includes(searchTerm) ||
-    item.phone?.includes(searchTerm) 
-
-
-  const matchesStatus = 
-
-   sortStatus === "" ||
-   sortStatus === "all" ||
-   item.status === sortStatus
-
-  return matchesSearch && matchesStatus
-  
-  
-})
-
-  
   return (
     <>
-      <header className=" border-b border-gray-300 rounded-b-lg py-3">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-
-        <button
-          onClick={() => {setOpen(true) ; setSelectedCase(null)}  }
-          className="flex items-center justify-center cursor-pointer gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition w-full md:w-auto"
-        >
-          <Plus size={18} />
-          إضافة حالة
-        </button>
-
-        <div className=" flex flex-col md:flex-row gap-2">
+      <header className="border-b border-[#D5DFD9] pb-4">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <PageHeading>الحالات</PageHeading>
+          <Button
+            onClick={() => {
+              setSelectedCase(null);
+              setOpen(true);
+            }}
+          >
+            إضافة حالة
+          </Button>
+        </div>
+        <div className="mt-4 flex flex-col gap-2 md:flex-row">
           <select
-        value={sortStatus} onChange={(e)=> setSortStatus(e.target.value)} className=" border p-2 rounded-lg border-gray-300 outline-none">
-          <option value="">فرز حسب الحالة</option>
-          <option value="all">كل الحالات</option>
-          <option value="pending">قيد المراجعة</option>
-          <option value="in_progress">جاري التنفيذ</option>
-          <option value="completed">مكتملة</option>
-          <option value="rejected">مرفوضة</option>
-        </select>
-
-        <div className="flex items-center gap-2 border border-gray-400 rounded-lg px-3 py-2 w-full md:w-80">
-          <Search size={18} className="text-gray-400" />
-
+            value={sortStatus}
+            onChange={(e) => setSortStatus(e.target.value)}
+            className="rounded-[12px] border border-[#D5DFD9] bg-white px-3 py-2.5"
+          >
+            <option value="">فرز حسب الحالة</option>
+            <option value="all">كل الحالات</option>
+            <option value="pending">قيد المراجعة</option>
+            <option value="in_progress">جاري التنفيذ</option>
+            <option value="completed">مكتملة</option>
+            <option value="rejected">مرفوضة</option>
+          </select>
           <input
             type="search"
             value={search}
-            onChange={(e)=>setSearch(e.target.value)}
-            placeholder="بحث باستخدام الاسم او رقم الهاتف او الرقم القومي"
-            className="w-full outline-none"
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="بحث بالاسم أو الهاتف أو الرقم القومي"
+            className="w-full rounded-[12px] border border-[#D5DFD9] px-3 py-2.5 md:w-80"
           />
         </div>
-        </div>
-      </div>
-
-      <CaseModal open={open} setOpen={setOpen} selectedCase={selectedCase} getCases={getCases} setSelectedCase={setSelectedCase}/>
       </header>
 
-      <div className="overflow-x-auto mt-6 bg-white rounded-xl shadow">
+      {loading && (
+        <div className="mt-6 space-y-2">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="h-12 animate-pulse rounded-lg bg-[#E6EEE9]" />
+          ))}
+        </div>
+      )}
 
-        <table
-          dir="rtl"
-          className="min-w-full text-right"
-        >
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="px-6 py-4">م</th>
-              <th className="px-6 py-4">اسم الحالة</th>
-              <th className="px-6 py-4 whitespace-nowrap">الرقم القومي</th>
-              <th className="px-6 py-4">حالة الطلب</th>
-              <th className="px-6 py-4 whitespace-nowrap">تصنيف الحالة</th>
-              <th className="px-6 py-4 whitespace-nowrap">نوع المساعدة</th>
-              <th className="px-6 py-4">رقم الهاتف</th>
-              <th className="px-6 py-4 text-center">الإجراءات</th>
-            </tr>
-          </thead>
+      {!loading && filteredCases.length === 0 && (
+        <div className="mt-6 rounded-[14px] border border-[#D5DFD9] bg-white p-8 text-center">
+          <p className="mb-4 text-[#3F5349]">
+            {search || sortStatus ? "ما فيش حالات تطابق البحث" : "ما فيش حالات بعد"}
+          </p>
+          {(search || sortStatus) && (
+            <Button variant="secondary" onClick={() => { setSearch(""); setSortStatus(""); }}>
+              تصفير الفلتر
+            </Button>
+          )}
+        </div>
+      )}
 
-          
+      {!loading && filteredCases.length > 0 && (
+        <div className="mt-6 overflow-x-auto rounded-[14px] border border-[#D5DFD9] bg-white">
+          <table className="min-w-full text-right text-sm">
+            <thead className="bg-[#E6EEE9] text-[#3F5349]">
+              <tr>
+                <th className="px-4 py-3">م</th>
+                <th className="px-4 py-3">الاسم</th>
+                <th className="px-4 py-3">الرقم القومي</th>
+                <th className="px-4 py-3">الحالة</th>
+                <th className="px-4 py-3">التصنيف</th>
+                <th className="px-4 py-3">نوع المساعدة</th>
+                <th className="px-4 py-3">الهاتف</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredCases.map((item, index) => (
+                <tr
+                  key={item.id}
+                  className="cursor-pointer border-t border-[#E6EEE9] hover:bg-[#F4F4F2]"
+                  onClick={() => {
+                    setSelectedCase(item);
+                    setDrawerOpen(true);
+                  }}
+                >
+                  <td className="px-4 py-3">{index + 1}</td>
+                  <td className="px-4 py-3">{item.userName}</td>
+                  <td className="px-4 py-3">{item.nationalId}</td>
+                  <td className="px-4 py-3"><StatusBadge status={item.status} /></td>
+                  <td className="px-4 py-3">{item.caseType}</td>
+                  <td className="px-4 py-3">{item.supportType}</td>
+                  <td className="px-4 py-3">{item.phone}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
-          <tbody>
-
-            {filteredCases.map((item, index)=>{
-
-              const status = getStatus(item.status)
-
-              const StatusIcon = status.icon
-
-              return <>
-                
-                <tr key={index} className="border-t border-blue-400 hover:bg-gray-50 whitespace-nowrap text-center">
-              <td className="px-6 py-4">{index + 1}</td>
-              <td className="px-6 py-4"> {item.userName} </td>
-              <td className="px-6 py-4">{item.nationalId}</td>
-
-              <td className="px-6 py-4">
-                <span className={`rounded-full flex justify-center items-center gap-1  px-3 whitespace-nowrap py-1 text-xs ${getStatus(item.status).className}`}>
-                  <StatusIcon size={16} />
-                  {getStatus(item.status).text}
-                </span>
-              </td>
-
-              <td className="px-6 py-4">{item.caseType}</td>
-              <td className="px-6 py-4"> {item.supportType}</td>
-              <td className="px-6 py-4">{item.phone}</td>
-
-              <td className="px-6 py-4">
-                <div className="flex justify-center gap-2">
-                  <button
-                    onClick={()=>{
-                      setSelectedCase(item);
-                      setOpenDetails(true)
-                    }}
-                  className="rounded bg-blue-500 px-3 cursor-pointer py-1 text-white hover:bg-blue-600">
-                    عرض
-                  </button>
-
-                  <button onClick={()=>{
-                    setSelectedCase(item)
-                    setOpen(true)
-                  }} className="rounded bg-green-500 px-3 py-1 text-white cursor-pointer hover:bg-green-600">
-                    تعديل
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      setSelectedCase(item);
-                      setOpenDeletCase(true);
-                    }}
-                    className="rounded cursor-pointer bg-red-500 px-3 py-1 text-white hover:bg-red-600"
-                  >
-                    حذف
-                  </button>
-                </div>
-              </td>
-            </tr>
-
-            {/* <DeletCaseModal openDeletCase={openDeletCase} setOpenDeletCase={setOpenDeletCase} handleDelete={handleDelete} id={item.id}/> */}
-
-            {/* handleDelete(item.id) */}
-                
-                </>
-            }
-              
-                
-            )}
-            
-            
-          </tbody>
-
-        </table>
-          <CaseDetailsModal setOpenDetails={setOpenDetails} openDetails={openDetails} selectedCase={selectedCase}/>
-
-        <DeletCaseModal
-  openDeletCase={openDeletCase}
-  setOpenDeletCase={setOpenDeletCase}
-  handleDelete={handleDelete}
-  id={selectedCase?.id}
-/>
-
-     
-
-      </div>
+      <CaseModal
+        open={open}
+        setOpen={setOpen}
+        selectedCase={selectedCase}
+        getCases={getCases}
+        setSelectedCase={setSelectedCase}
+      />
+      <CaseDrawer
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        selectedCase={selectedCase}
+        onEdit={() => {
+          setDrawerOpen(false);
+          setOpen(true);
+        }}
+        onArchive={() => setConfirmOpen(true)}
+      />
+      <ConfirmDialog
+        open={confirmOpen}
+        onClose={() => setConfirmOpen(false)}
+        onConfirm={handleArchive}
+        title="نقل للأرشيف"
+        body="هتنقل الحالة للأرشيف. تقدر تسترجعها بعدين."
+        confirmLabel="نقل"
+        danger
+      />
     </>
   );
 }

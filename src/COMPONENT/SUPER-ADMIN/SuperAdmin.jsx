@@ -1,364 +1,162 @@
-import { ShieldCheck, Users } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { collection, deleteDoc, doc, getDocs, updateDoc } from "firebase/firestore";
-import { db } from "../../firebase";
 import { toast } from "react-toastify";
-import ChangeRoleModal from "../CHANGE-ROLE-MODAL/ChangeRoleModal";
+import { db } from "../../firebase";
+import { Button } from "../UI/Button.jsx";
+import { ConfirmDialog } from "../UI/ConfirmDialog.jsx";
+import { PageHeading } from "../UI/PageHeading.jsx";
+import { MSG } from "../../lib/validation.js";
+
+function roleLabel(role) {
+  if (role === "admin") return "مشرف";
+  if (role === "superAdmin") return "مسؤول أعلى";
+  return "مستخدم";
+}
 
 export default function SuperAdmin() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [roleUser, setRoleUser] = useState(null);
+  const [deleteUser, setDeleteUser] = useState(null);
 
-  const [selectedUser, setSelectedUser] = useState(null);
-  const [openRoleModal, setOpenRoleModal] = useState(false);
-  const [roleLoading, setRoleLoading] = useState(false);  
-
-  const handleOpenRoleModal = (user) => {
-  setSelectedUser(user);
-  setOpenRoleModal(true);
-};
-
-
-const deleteAcount = async (id)=>{
-  try{
-    await deleteDoc(doc(db , "users" , id ))
-
-    setUsers((prevUsers) =>
-      prevUsers.filter((user) => user.id !== id)
-    );
-
-    toast.success("تم حذف الحسابا بنجاح")
-  }catch(err){
-    toast.error("حدث خطا ما اثناء حذف الحساب")
-  }
-}
-const changeRole = async ()=>{
- if (!selectedUser) return;
-
- try{
-     setRoleLoading(true);
-
-     const newRole  = selectedUser.role === "admin" ? "user" : "admin"
-
-     await updateDoc(doc(db , "users" , selectedUser.id),{
-      role : newRole
-     })
-
-     
-
-      setUsers((prevUsers) =>
-      prevUsers.map((item) =>
-        item.id === selectedUser.id
-          ? { ...item, role: newRole }
-          : item
-      )
-    );
-
-     setSelectedUser((prev) => ({
-      ...prev,
-      role: newRole,
-    }));
-
-    toast.success("تم تغيير صلاحية الحساب بنجاح");
-
-    setOpenRoleModal(false);
-
- }catch(err){
-    toast.error("حدث خطأ أثناء تغيير صلاحية الحساب");
- }finally {
-    setRoleLoading(false);
-  }
-}
+  useEffect(() => {
+    document.title = "المسؤولون — جمعية الهداية";
+  }, []);
 
   useEffect(() => {
     const getUsers = async () => {
       try {
-        setLoading(true);
-        setError("");
-
-        const usersSnapshot = await getDocs(
-          collection(db, "users")
-        );
-
-        const usersData = usersSnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-
-        setUsers(usersData);
-      } catch (err) {
-        setError("حدث خطأ أثناء تحميل بيانات المستخدمين");
+        const snapshot = await getDocs(collection(db, "users"));
+        setUsers(snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() })));
+      } catch {
+        toast.error(MSG.network);
       } finally {
         setLoading(false);
       }
     };
-
     getUsers();
   }, []);
 
-  const admins = users.filter(
-    (user) => user.role === "admin"
-  );
+  const displayedUsers = users.filter((item) => item.role !== "superAdmin");
+  const admins = users.filter((item) => item.role === "admin");
+  const normalUsers = users.filter((item) => item.role === "user");
 
-  const normalUsers = users.filter(
-    (user) => user.role === "user"
-  );
+  const changeRole = async () => {
+    if (!roleUser) return;
+    const newRole = roleUser.role === "admin" ? "user" : "admin";
+    try {
+      await updateDoc(doc(db, "users", roleUser.id), { role: newRole });
+      setUsers((prev) =>
+        prev.map((item) => (item.id === roleUser.id ? { ...item, role: newRole } : item))
+      );
+      toast.success("تم تغيير الصلاحية");
+    } catch {
+      toast.error(MSG.network);
+    }
+  };
 
-  if (loading) {
-    return (
-      <div className="content" dir="rtl">
-        <p className="text-center mt-10 text-gray-500">
-          جاري تحميل البيانات...
-        </p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="content" dir="rtl">
-        <div className="mt-10 p-4 rounded-lg bg-red-100 text-red-600 text-center">
-          {error}
-        </div>
-      </div>
-    );
-  }
-
-  const displayedUsers = users.filter(
-  (user) => user.role !== "superAdmin"
-);
-
-  console.log(users.map((user) => user.role));
-  const usersWithoutRole = users.filter(
-  (user) => !user.role
-);
-
-console.log(usersWithoutRole);
+  const removeAccount = async () => {
+    if (!deleteUser) return;
+    try {
+      await deleteDoc(doc(db, "users", deleteUser.id));
+      setUsers((prev) => prev.filter((item) => item.id !== deleteUser.id));
+      toast.success("تم حذف الحساب");
+    } catch {
+      toast.error(MSG.network);
+    }
+  };
 
   return (
-    <div className="content" dir="rtl">
-      
-      <header>
-        <h1 className="font-bold text-xl">
-          إدارة المستخدمين والمشرفين
-        </h1>
-
-        <p className="mt-1 text-gray-500">
-          إدارة الحسابات والصلاحيات
-        </p>
+    <>
+      <header className="border-b border-[#D5DFD9] pb-4">
+        <PageHeading>المسؤولون</PageHeading>
+        <p className="mt-1 text-sm text-[#3F5349]">إدارة الحسابات والصلاحيات</p>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5">
-
-        {/* إجمالي المشرفين */}
-        <div className="card p-4 rounded-xl shadow flex justify-between items-center border border-blue-500">
-          
-          <div className="bg-blue-100 text-blue-600 p-3 rounded-lg">
-            <ShieldCheck size={28} />
-          </div>
-
-          <div className="flex flex-col gap-1">
-            <h3 className="text-gray-500">
-              إجمالي المشرفين
-            </h3>
-
-            <h2 className="text-2xl font-bold">
-              {admins.length}
-            </h2>
-          </div>
-
+      <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div className="rounded-[14px] border border-[#D5DFD9] bg-white p-4">
+          <p className="text-sm text-[#3F5349]">إجمالي المشرفين</p>
+          <p className="mt-1 text-2xl font-bold text-[#1C211E]">{admins.length}</p>
         </div>
-
-        {/* إجمالي المستخدمين */}
-        <div className="card p-4 rounded-xl shadow flex justify-between items-center border border-blue-500">
-          
-          <div className="bg-blue-100 text-blue-600 p-3 rounded-lg">
-            <Users size={28} />
-          </div>
-
-          <div className="flex flex-col gap-1">
-            <h3 className="text-gray-500">
-              إجمالي المستخدمين
-            </h3>
-
-            <h2 className="text-2xl font-bold">
-              {normalUsers.length}
-            </h2>
-          </div>
-
+        <div className="rounded-[14px] border border-[#D5DFD9] bg-white p-4">
+          <p className="text-sm text-[#3F5349]">إجمالي المستخدمين</p>
+          <p className="mt-1 text-2xl font-bold text-[#1C211E]">{normalUsers.length}</p>
         </div>
-
       </div>
 
-      {/* Users Table */}
-<div className="mt-8 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+      {loading && (
+        <div className="mt-6 space-y-2">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="h-12 animate-pulse rounded-lg bg-[#E6EEE9]" />
+          ))}
+        </div>
+      )}
 
-  {/* Table Header */}
-  <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
-    <div>
-      <h2 className="text-lg font-bold text-gray-800">
-        إدارة الحسابات
-      </h2>
+      {!loading && displayedUsers.length === 0 && (
+        <div className="mt-6 rounded-[14px] border border-[#D5DFD9] bg-white p-8 text-center text-[#3F5349]">
+          ما فيش حسابات تظهر هنا.
+        </div>
+      )}
 
-      <p className="text-sm text-gray-500 mt-1">
-        جميع الحسابات المسجلة في النظام
-      </p>
-    </div>
+      {!loading && displayedUsers.length > 0 && (
+        <div className="mt-6 overflow-x-auto rounded-[14px] border border-[#D5DFD9] bg-white">
+          <table className="min-w-full text-right text-sm">
+            <thead className="bg-[#E6EEE9] text-[#3F5349]">
+              <tr>
+                <th className="px-4 py-3">الاسم</th>
+                <th className="px-4 py-3">البريد</th>
+                <th className="px-4 py-3">الهاتف</th>
+                <th className="px-4 py-3">الصلاحية</th>
+                <th className="px-4 py-3">إجراء</th>
+              </tr>
+            </thead>
+            <tbody>
+              {displayedUsers.map((item) => (
+                <tr key={item.id} className="border-t border-[#E6EEE9]">
+                  <td className="px-4 py-3">{item.name || "غير متوفر"}</td>
+                  <td className="px-4 py-3">{item.email || "غير متوفر"}</td>
+                  <td className="px-4 py-3">{item.phone || "غير مسجّل"}</td>
+                  <td className="px-4 py-3">{roleLabel(item.role)}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex flex-col gap-2 sm:flex-row">
+                      <Button variant="secondary" onClick={() => setRoleUser(item)}>
+                        تغيير الصلاحية
+                      </Button>
+                      <Button variant="danger" onClick={() => setDeleteUser(item)}>
+                        حذف
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
-    <div className="bg-blue-50 text-blue-600 px-3 py-2 rounded-lg text-sm font-medium">
-      {users.length} حساب
-    </div>
-  </div>
-
-  {/* Table */}
-  <div className="overflow-x-auto">
-    <table className="w-full">
-
-      {/* Head */}
-      <thead>
-        <tr className="bg-gray-50/80 border-b border-gray-100">
-
-          <th className="px-6 py-4 text-right text-xs font-semibold text-gray-500">
-            المستخدم
-          </th>
-
-          <th className="px-6 py-4 text-right text-xs font-semibold text-gray-500">
-            البريد الإلكتروني
-          </th>
-
-          <th className="px-6 py-4 text-right text-xs font-semibold text-gray-500">
-            رقم الهاتف
-          </th>
-
-          <th className="px-6 py-4 text-right text-xs font-semibold text-gray-500">
-            الصلاحية
-          </th>
-
-          <th className="px-6 py-4 text-right text-xs font-semibold text-gray-500">
-            الإجراءات
-          </th>
-
-        </tr>
-      </thead>
-
-      {/* Body */}
-      <tbody>
-
-        {displayedUsers.map((item) => (
-
-          <tr
-            key={item.id}
-            className="border-b border-gray-100 last:border-0 hover:bg-gray-50/70 transition"
-          >
-
-            {/* User */}
-            <td className="px-6 py-4">
-
-              <div className="flex items-center gap-3">
-
-                <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold">
-                  {item.name?.charAt(0) || "؟"}
-                </div>
-
-                <div>
-                  <p className="font-semibold text-gray-800">
-                    {item.name || "غير متوفر"}
-                  </p>
-
-                  <p className="text-xs text-gray-400 mt-1">
-                    ID: {item.id}
-                  </p>
-                </div>
-
-              </div>
-
-            </td>
-
-            {/* Email */}
-            <td className="px-6 py-4">
-
-              <span className="text-sm text-gray-600">
-                {item.email || "غير متوفر"}
-              </span>
-
-            </td>
-
-            {/* Phone */}
-            <td className="px-6 py-4">
-
-              <span className="text-sm text-gray-600">
-                {item.phone || "غير متوفر"}
-              </span>
-
-            </td>
-
-            {/* Role */}
-            <td className="px-6 py-4">
-
-              <span
-                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold ${
-                  item.role === "admin"
-                    ? "bg-blue-50 text-blue-600"
-                    : "bg-gray-100 text-gray-600"
-                }`}
-              >
-
-                <span
-                  className={`w-1.5 h-1.5 rounded-full ${
-                    item.role === "admin"
-                      ? "bg-blue-500"
-                      : "bg-gray-400"
-                  }`}
-                />
-
-                {item.role === "admin"
-                  ? "مشرف"
-                  : "مستخدم"}
-
-              </span>
-
-            </td>
-
-            {/* Actions */}
-            <td className="px-6 py-4 flex flex-col md:flex-row gap-1">
-
-              <button
-  onClick={() => handleOpenRoleModal(item)}
-  className="px-4 py-2 text-sm cursor-pointer font-medium text-blue-600 bg-blue-50 border border-blue-100 hover:bg-blue-600 hover:text-white rounded-lg transition-all duration-200"
->
-  تعديل
-</button>
-
-<button
-  onClick={() => deleteAcount(item.id)}
-  className="px-4 py-2  text-sm cursor-pointer font-medium text-red-600 bg-red-50 border border-red-100 hover:bg-red-600 hover:text-white rounded-lg transition-all duration-200"
->
-  حذف
-</button>
-
-            </td>
-
-          </tr>
-
-        ))}
-
-      </tbody>
-
-    </table>
-  </div>
-
-  <ChangeRoleModal
-  open={openRoleModal}
-  setOpen={setOpenRoleModal}
-  selectedUser={selectedUser}
-  changeRole={changeRole}
-  loading={roleLoading}
-/>
-
-</div>
-    </div>
-
-    
+      <ConfirmDialog
+        open={Boolean(roleUser)}
+        onClose={() => setRoleUser(null)}
+        onConfirm={changeRole}
+        title="تغيير الصلاحية"
+        body={
+          roleUser
+            ? `هتغير صلاحية ${roleUser.name || "الحساب"} من ${roleLabel(roleUser.role)} لـ ${
+                roleUser.role === "admin" ? "مستخدم" : "مشرف"
+              }.`
+            : ""
+        }
+        confirmLabel="تأكيد"
+      />
+      <ConfirmDialog
+        open={Boolean(deleteUser)}
+        onClose={() => setDeleteUser(null)}
+        onConfirm={removeAccount}
+        title="حذف الحساب"
+        body={`هتحذف حساب ${deleteUser?.name || ""} نهائي.`}
+        confirmLabel="حذف"
+        danger
+      />
+    </>
   );
 }

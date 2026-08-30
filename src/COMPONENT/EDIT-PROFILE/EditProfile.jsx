@@ -4,13 +4,16 @@ import { updateProfile } from "firebase/auth";
 import { AuthContext } from "../CONTEXT/Context";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
-import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "../../firebase";
 import Loading from "../LOADING/Loading";
 
+const PHONE_REGEX = /^01[0125][0-9]{8}$/;
+const NAME_REGEX = /^[a-zA-Z\u0600-\u06FF\s]{3,50}$/;
+
 export default function EditProfile() {
 
-  const { user , loading , setPhoneNumper} =  useContext(AuthContext)
+  const { user , loading , userData, setUserData} =  useContext(AuthContext)
   const navigate = useNavigate()
 
 
@@ -23,18 +26,26 @@ export default function EditProfile() {
     phone: "",
   },
 
+  validate: (values) => {
+    const errors = {};
+
+    if (!NAME_REGEX.test(values.name?.trim() || "")) {
+      errors.name = "برجاء إدخال اسم صحيح";
+    }
+
+    if (!PHONE_REGEX.test(values.phone || "")) {
+      errors.phone = "رقم الهاتف غير صحيح";
+    }
+
+    return errors;
+  },
+
   onSubmit: async (values) => {
-    console.log("Submit Works");
     try {
-      console.log("Submit Works");
-      console.log(user);
       await updateProfile(user, {
         displayName: values.name,
       });
 
-      console.log("updateProfile Done");
-        
-      console.log(values);
       await setDoc(doc(db , "users" , user.uid) ,{
           name: values.name,
           email: user.email,
@@ -43,13 +54,19 @@ export default function EditProfile() {
         merge : true
       })
 
+      if (typeof setUserData === "function") {
+        setUserData({
+          ...(userData || {}),
+          name: values.name,
+          phone: values.phone,
+        });
+      }
 
       toast.success("Profile Updated Successfully");
 
-      navigate("/profile");
-    } catch (error) {
-        
-        toast.error(error.message);
+      navigate("/Profile");
+    } catch {
+        toast.error("تعذر حفظ التعديلات. حاول مرة أخرى.");
     }
   },
 });
@@ -90,16 +107,25 @@ if (loading) {
 
         <form onSubmit={formik.handleSubmit}  className="space-y-5">
 
-          <input
-            type="text"
-            name="name"
-            placeholder="Full Name"
-            value={formik.values.name}
-            onChange={formik.handleChange}
-            onBlur={formik.handleBlur}
+          <div>
+            <label htmlFor="name" className="block mb-1 font-medium">
+              الاسم
+            </label>
+            <input
+              id="name"
+              type="text"
+              name="name"
+              placeholder="Full Name"
+              value={formik.values.name}
+              onChange={formik.handleChange}
+              onBlur={formik.handleBlur}
 
-            className="w-full p-3 rounded-lg border border-gray-300 outline-none focus:border-blue-500"
-          />
+              className="w-full p-3 rounded-lg border border-gray-300 outline-none focus:border-blue-500"
+            />
+            {formik.touched.name && formik.errors.name ? (
+              <p className="text-red-500 text-sm mt-1">{formik.errors.name}</p>
+            ) : null}
+          </div>
 
           <input
             type="email"
@@ -109,15 +135,24 @@ if (loading) {
             className="w-full p-3 rounded-lg bg-gray-100 cursor-not-allowed"
           />
 
-          <input
-            type="text"
-            name="phone"
-            placeholder="Phone Number"
-            value={formik.values.phone}
-            onChange={formik.handleChange}
-            onBlur={formik.handleBlur}
-            className="w-full p-3 rounded-lg border border-gray-300 outline-none focus:border-blue-500"
-          />
+          <div>
+            <label htmlFor="phone" className="block mb-1 font-medium">
+              رقم الهاتف
+            </label>
+            <input
+              id="phone"
+              type="text"
+              name="phone"
+              placeholder="Phone Number"
+              value={formik.values.phone}
+              onChange={formik.handleChange}
+              onBlur={formik.handleBlur}
+              className="w-full p-3 rounded-lg border border-gray-300 outline-none focus:border-blue-500"
+            />
+            {formik.touched.phone && formik.errors.phone ? (
+              <p className="text-red-500 text-sm mt-1">{formik.errors.phone}</p>
+            ) : null}
+          </div>
 
           <button
             type="submit"

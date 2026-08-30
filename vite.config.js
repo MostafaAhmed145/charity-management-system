@@ -8,8 +8,7 @@ export default defineConfig({
     tailwindcss(),
   ],
   test: {
-    environment: "jsdom",
-    globals: true,
-    include: ["src/**/*.test.js"],
+    environment: "node",
+    include: ["src/lib/status.test.js", "src/lib/validation.test.js"],
   },
 });

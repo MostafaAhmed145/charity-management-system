@@ -1,190 +1,127 @@
-import React, { useContext, useEffect, useState } from "react";
-import { Trash2 } from "lucide-react";
-import { collection, getDocs, query, where , deleteDoc, doc , updateDoc} from "firebase/firestore";
-import { db } from '../../firebase'
+import { useEffect, useState } from "react";
+import { collection, deleteDoc, doc, getDocs, query, updateDoc, where } from "firebase/firestore";
 import { toast } from "react-toastify";
-import { AuthContext } from "../CONTEXT/Context";
+import { db } from "../../firebase";
+import { Button } from "../UI/Button.jsx";
+import { ConfirmDialog } from "../UI/ConfirmDialog.jsx";
+import { PageHeading } from "../UI/PageHeading.jsx";
+import { StatusBadge } from "../UI/StatusBadge.jsx";
+import { MSG } from "../../lib/validation.js";
 
 export default function Trash() {
+  const [cases, setCases] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [pendingDelete, setPendingDelete] = useState(null);
 
-  const [cases, setCases] = useState([])
-  const { getStatus } = useContext(AuthContext);
+  useEffect(() => {
+    document.title = "الأرشيف — جمعية الهداية";
+  }, []);
 
-
-  const deletCase = async (id)=>{
-    try{
-      await deleteDoc(doc(db, "cases", id))
-
-    setCases((prev) => prev.filter((item) => item.id !== id));
-
-    toast.success("تم حذف الحاله بنجاح")
-    }catch(err){
-      toast.error("لم يتم حذف هذه الحاله")
-    }
-  }
+  useEffect(() => {
+    const getArchivedCases = async () => {
+      try {
+        const q = query(collection(db, "cases"), where("archived", "==", true));
+        const snapshot = await getDocs(q);
+        setCases(snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() })));
+      } catch {
+        toast.error(MSG.network);
+      } finally {
+        setLoading(false);
+      }
+    };
+    getArchivedCases();
+  }, []);
 
   const restoreCase = async (id) => {
-  try {
-    await updateDoc(doc(db, "cases", id), {
-      archived: false,
-    });
-
-    setCases((prev) => prev.filter((item) => item.id !== id));
-
-    toast.success("تم استعادة الحالة بنجاح");
-  } catch (err) {
-    toast.error("لم يتم استعادة الحالة");
-  }
-};
-
-
-  useEffect(()=>{
-        
-    const getArchivedCases = async ()=>{
-   const q = query(
-          collection(db , "cases") ,
-          where("archived" , "==" , true)
-         ) ;
-
-         const snapshot = await getDocs(q)
-
-         const archivedCases  = snapshot.docs.map((doc)=> ({
-          id: doc.id,
-          ...doc.data(),
-         }))
-
-         setCases(archivedCases)
-
+    try {
+      await updateDoc(doc(db, "cases", id), { archived: false });
+      setCases((prev) => prev.filter((item) => item.id !== id));
+      toast.success("تم استعادة الحالة");
+    } catch {
+      toast.error(MSG.network);
     }
+  };
 
-    getArchivedCases()
-  },[])
-
+  const deleteCase = async () => {
+    if (!pendingDelete) return;
+    try {
+      await deleteDoc(doc(db, "cases", pendingDelete.id));
+      setCases((prev) => prev.filter((item) => item.id !== pendingDelete.id));
+      toast.success("تم حذف الحالة");
+    } catch {
+      toast.error(MSG.network);
+    }
+  };
 
   return (
-    <div dir="rtl">
-      {/* Header */}
-      <div className="flex items-center justify-between border-b border-gray-300 pb-4">
-        <div className="flex items-center gap-2">
-          <Trash2 className="text-red-500" size={26} />
+    <>
+      <header className="border-b border-[#D5DFD9] pb-4">
+        <PageHeading>الأرشيف</PageHeading>
+      </header>
 
-          <h1 className="text-2xl font-bold text-gray-800">
-            المهملات
-          </h1>
+      {loading && (
+        <div className="mt-6 space-y-2">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="h-12 animate-pulse rounded-lg bg-[#E6EEE9]" />
+          ))}
         </div>
-      </div>
+      )}
 
-
-         {cases.length === 0 ? <div className="mt-10 bg-white rounded-2xl border border-gray-200 p-10 text-center">
-    <Trash2 className="mx-auto text-gray-300" size={50} />
-
-    <h2 className="mt-4 text-lg font-bold text-gray-700">
-      المهملات فارغة
-    </h2>
-
-    <p className="text-sm text-gray-500 mt-2">
-      لا توجد حالات مؤرشفة حاليًا
-    </p>
-  </div> : <>
-         
-         
-        {cases?.map((item)=>{
-          const status = getStatus(item.status)
-          return <div key={item.id} className="mt-6 bg-white rounded-xl shadow overflow-hidden">
-        
-        {/* Card Header */}
-        <div className="bg-gray-50 border-b border-gray-200 px-6 py-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          
-          <div>
-            <h2 className="font-bold text-gray-800 text-lg">
-               {item.userName}
-            </h2>
-
-            <p className="text-sm text-gray-500 mt-1">
-  الرقم القومي:
-  <span dir="ltr" className="inline-block mr-1">
-    ********{item.nationalId?.slice(-3)}
-  </span>
-</p>
-          </div>
-
-          <span className="bg-red-100 text-red-600 px-3 py-1 rounded-full text-sm w-fit">
-            في المهملات
-          </span>
+      {!loading && cases.length === 0 && (
+        <div className="mt-6 rounded-[14px] border border-[#D5DFD9] bg-white p-8 text-center text-[#3F5349]">
+          الأرشيف فاضي. ما فيش حالات منقولة هنا.
         </div>
+      )}
 
-        {/* Card Body */}
-        <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-
-          <div>
-            <p className="text-sm text-gray-500">
-              تصنيف الحالة
-            </p>
-
-            <p className="font-semibold text-gray-800 mt-1">
-               {item.caseType}
-            </p>
-          </div>
-
-          <div>
-            <p className="text-sm text-gray-500">
-              نوع المساعدة
-            </p>
-
-            <p className="font-semibold text-gray-800 mt-1">
-               {item.supportType}
-            </p>
-          </div>
-
-          <div>
-            <p className="text-sm text-gray-500">
-              رقم الهاتف
-            </p>
-
-            <p className="font-semibold text-gray-800 mt-1">
-              {item.phone}
-            </p>
-          </div>
-
-          <div>
-            <p className="text-sm text-gray-500">
-              حالة الطلب
-            </p>
-
-            <p className={`font-semibold text-gray-800 ${status.className} flex justify-center items-center gap-1 w-fit p-1 rounded-xl`}>
-                    <status.icon size={16} />
-                    { status.text || "غير متوفر"}
-                  </p>
-          </div>
-
+      {!loading && cases.length > 0 && (
+        <div className="mt-6 overflow-x-auto rounded-[14px] border border-[#D5DFD9] bg-white">
+          <table className="min-w-full text-right text-sm">
+            <thead className="bg-[#E6EEE9] text-[#3F5349]">
+              <tr>
+                <th className="px-4 py-3">الاسم</th>
+                <th className="px-4 py-3">الحالة</th>
+                <th className="px-4 py-3">التصنيف</th>
+                <th className="px-4 py-3">نوع المساعدة</th>
+                <th className="px-4 py-3">الهاتف</th>
+                <th className="px-4 py-3">إجراء</th>
+              </tr>
+            </thead>
+            <tbody>
+              {cases.map((item) => (
+                <tr key={item.id} className="border-t border-[#E6EEE9]">
+                  <td className="px-4 py-3">{item.userName}</td>
+                  <td className="px-4 py-3">
+                    <StatusBadge status={item.status} />
+                  </td>
+                  <td className="px-4 py-3">{item.caseType}</td>
+                  <td className="px-4 py-3">{item.supportType}</td>
+                  <td className="px-4 py-3">{item.phone}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex flex-col gap-2 sm:flex-row">
+                      <Button variant="secondary" onClick={() => restoreCase(item.id)}>
+                        استعادة
+                      </Button>
+                      <Button variant="danger" onClick={() => setPendingDelete(item)}>
+                        حذف نهائي
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
+      )}
 
-        {/* Actions */}
-        <div className="border-t border-gray-200 px-6 py-4 flex flex-col sm:flex-row justify-end gap-3">
-
-          <button
-          onClick={()=>{restoreCase(item.id)}}
-            className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-green-500 text-white hover:bg-green-600 transition cursor-pointer"
-          >
-            استعادة
-          </button>
-
-          <button
-          onClick={()=>{deletCase(item.id)}}
-            className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 transition cursor-pointer"
-          >
-            <Trash2 size={17} />
-            حذف نهائي
-          </button>
-
-        </div>
-
-      </div>
-          
-        
-        })}
-         </>}
-      
-    </div>
+      <ConfirmDialog
+        open={Boolean(pendingDelete)}
+        onClose={() => setPendingDelete(null)}
+        onConfirm={deleteCase}
+        title="حذف نهائي"
+        body="الحذف نهائي ومش هيرجع. متأكد؟"
+        confirmLabel="حذف"
+        danger
+      />
+    </>
   );
 }

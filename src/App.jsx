@@ -1,6 +1,7 @@
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 
+import Door from "./COMPONENT/DOOR/Door";
 import Login from "./COMPONENT/LOGIN/Login";
 import Register from "./COMPONENT/REGISTER/Register";
 import LayOute from "./COMPONENT/LayOute/LayOute";
@@ -29,7 +30,7 @@ function App() {
       children: [
         {
           index: true,
-          element: <Login />,
+          element: <Door />,
         },
         {
           path: "login",
@@ -124,12 +125,13 @@ function App() {
         <RouterProvider router={myRoute} />
         <ToastContainer
           position="top-center"
-          autoClose={2000}
+          autoClose={2500}
           hideProgressBar={false}
           closeOnClick
           pauseOnHover
           draggable
           theme="light"
+          rtl
         />
       </AuthProvider>
     </>

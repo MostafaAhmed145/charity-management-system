@@ -1,84 +1,54 @@
-import { FilePlus, HandHeart, MessageCircle, SearchCheck } from "lucide-react";
-import React from "react";
-import { Link } from "react-router-dom";
+import { useContext, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { AuthContext } from "../CONTEXT/Context";
+import { Button } from "../UI/Button.jsx";
+import { PageHeading } from "../UI/PageHeading.jsx";
 
 export default function UserHome() {
-  const options = [
-    {
-      title: "تقديم طلب",
-      description: "قم بتقديم طلب مساعدة جديد",
-      icon: FilePlus,
-      path: "/submitCase",
-    },
-    {
-      title: "متابعة طلبك",
-      description: "تابع حالة طلب المساعدة الخاص بك",
-      icon: SearchCheck,
-      path: "/myCases",
-    },
+  const { userData } = useContext(AuthContext);
+  const navigate = useNavigate();
+  const first = (userData?.name || "").trim().split(/\s+/)[0];
 
-      {
-      title: "تواصل معنا",
-      description: "تواصل معنا عبر WhatsApp",
-      icon: MessageCircle,
-      path: "https://wa.me/201121122552",
-    },
-  ];
+  useEffect(() => {
+    document.title = "جمعية الهداية";
+  }, []);
 
   return (
+    <section className="mx-auto max-w-xl px-4 py-8">
+      <p className="text-sm text-[#3F5349]">
+        {first ? `السلام عليكم يا ${first}` : "السلام عليكم"}
+      </p>
+      <PageHeading className="mt-2 mb-8">إزاي نقدر نساعدك؟</PageHeading>
 
-    
-    <section
-      dir="rtl"
-      className=" flex items-center justify-center px-4 py-10 mt-12"
-    >
-      <div className="grid w-full max-w-5xl grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {options.map((option) => {
-          const Icon = option.icon;
-
-          const isExternal = option.path.startsWith("http");
-
-          return isExternal ? (
-            <a
-              key={option.title}
-              href={option.path}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group rounded-2xl bg-white p-8 text-center shadow-md transition-all duration-300 hover:-translate-y-2 hover:shadow-xl"
-            >
-              <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-blue-50 text-blue-600 transition-colors duration-300 group-hover:bg-blue-600 group-hover:text-white">
-                <Icon size={30} strokeWidth={1.8} />
-              </div>
-
-              <h2 className="mb-3 text-xl font-bold text-gray-800">
-                {option.title}
-              </h2>
-
-              <p className="text-sm leading-6 text-gray-500">
-                {option.description}
-              </p>
-            </a>
-          ) : (
-            <Link
-              key={option.title}
-              to={option.path}
-              className="group rounded-2xl bg-white p-8 text-center shadow-md transition-all duration-300 hover:-translate-y-2 hover:shadow-xl"
-            >
-              <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-blue-50 text-blue-600 transition-colors duration-300 group-hover:bg-blue-600 group-hover:text-white">
-                <Icon size={30} strokeWidth={1.8} />
-              </div>
-
-              <h2 className="mb-3 text-xl font-bold text-gray-800">
-                {option.title}
-              </h2>
-
-              <p className="text-sm leading-6 text-gray-500">
-                {option.description}
-              </p>
-            </Link>
-          );
-        })}
+      <div className="space-y-3">
+        <Link
+          to="/submitCase"
+          className="block rounded-[14px] border border-[#D5DFD9] bg-white p-4"
+        >
+          <strong className="block text-[#1C211E]">تقديم طلب</strong>
+          <span className="text-sm text-[#3F5349]">اكتب بيانات الحالة في خطوات قصيرة</span>
+        </Link>
+        <Link
+          to="/myCases"
+          className="block rounded-[14px] border border-[#D5DFD9] bg-white p-4"
+        >
+          <strong className="block text-[#1C211E]">متابعة طلباتك</strong>
+          <span className="text-sm text-[#3F5349]">شوف حالة الطلب من غير لف</span>
+        </Link>
+        <a
+          href="https://wa.me/201121122552"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block rounded-[14px] border border-[#D5DFD9] bg-white p-4"
+        >
+          <strong className="block text-[#1C211E]">تواصل واتساب</strong>
+          <span className="text-sm text-[#3F5349]">تواصل معنا على واتساب</span>
+        </a>
       </div>
+
+      <Button className="mt-8 w-full" onClick={() => navigate("/submitCase")}>
+        تقديم طلب مساعدة
+      </Button>
     </section>
   );
 }

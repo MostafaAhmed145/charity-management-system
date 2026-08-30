@@ -11,7 +11,7 @@ export function ConfirmDialog({
   danger = false,
 }) {
   return (
-    <Dialog open={open} onClose={onClose} className="relative z-[60]">
+    <Dialog open={open} onClose={onClose} className="relative z-[70]">
       <div className="fixed inset-0 bg-black/40" aria-hidden="true" />
       <div className="fixed inset-0 flex items-center justify-center p-4">
         <DialogPanel className="w-full max-w-md rounded-[14px] border border-[#D5DFD9] bg-white p-6 shadow-lg">

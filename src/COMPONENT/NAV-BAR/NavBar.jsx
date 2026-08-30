@@ -40,7 +40,7 @@ export default function NavBar() {
       toast.success("تم تسجيل الخروج بنجاح");
       navigate("/login", { replace: true });
     } catch {
-      toast.error("حدث خطا ما");
+      toast.error("تعذر تسجيل الخروج، حاول مرة تانية");
     }
   }
 

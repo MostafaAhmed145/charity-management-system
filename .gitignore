@@ -12,6 +12,14 @@ dist
 dist-ssr
 *.local
 
+# Env
+.env
+.env.*
+!.env.example
+
+# Visual brainstorming companion
+.superpowers/
+.history
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
