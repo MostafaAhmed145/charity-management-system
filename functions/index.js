@@ -13,10 +13,6 @@ async function assertSuperAdmin(request) {
     throw new HttpsError("unauthenticated", "Must be signed in.");
   }
 
-  if (request.auth.token.role === "superAdmin") {
-    return;
-  }
-
   const snap = await getFirestore().doc(`users/${request.auth.uid}`).get();
   if (snap.exists && snap.data().role === "superAdmin") {
     return;
@@ -39,8 +35,9 @@ exports.setUserRole = onCall(async (request) => {
     throw new HttpsError("invalid-argument", "Role must be user or admin.");
   }
 
-  await getAuth().setCustomUserClaims(uid, { role });
   await getFirestore().doc(`users/${uid}`).set({ role }, { merge: true });
+  await getAuth().setCustomUserClaims(uid, { role });
+  await getAuth().revokeRefreshTokens(uid);
 
   return { ok: true };
 });

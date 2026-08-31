@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { collection, deleteDoc, doc, getDocs, query, updateDoc, where } from "firebase/firestore";
 import { toast } from "react-toastify";
 import { db } from "../../firebase";
+import { AuthContext } from "../CONTEXT/Context";
 import { Button } from "../UI/Button.jsx";
 import { ConfirmDialog } from "../UI/ConfirmDialog.jsx";
 import { PageHeading } from "../UI/PageHeading.jsx";
@@ -9,6 +10,8 @@ import { StatusBadge } from "../UI/StatusBadge.jsx";
 import { MSG } from "../../lib/validation.js";
 
 export default function Trash() {
+  const { role } = useContext(AuthContext);
+  const canHardDelete = role === "superAdmin";
   const [cases, setCases] = useState([]);
   const [loading, setLoading] = useState(true);
   const [pendingDelete, setPendingDelete] = useState(null);
@@ -101,9 +104,11 @@ export default function Trash() {
                       <Button variant="secondary" onClick={() => restoreCase(item.id)}>
                         استعادة
                       </Button>
-                      <Button variant="danger" onClick={() => setPendingDelete(item)}>
-                        حذف نهائي
-                      </Button>
+                      {canHardDelete && (
+                        <Button variant="danger" onClick={() => setPendingDelete(item)}>
+                          حذف نهائي
+                        </Button>
+                      )}
                     </div>
                   </td>
                 </tr>

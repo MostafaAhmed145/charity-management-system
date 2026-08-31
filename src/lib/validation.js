@@ -1,9 +1,9 @@
-export const PASSWORD_REGEX = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
+export const PASSWORD_REGEX = /^.{8,}$/;
 export const PHONE_REGEX = /^01[0125][0-9]{8}$/;
 export const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export const NAME_REGEX = /^[a-zA-Z\u0600-\u06FF\s]{3,50}$/;
 export const NATIONAL_ID_REGEX = /^[0-9]{14}$/;
-export const PASSWORD_HINT = "كلمة المرور 8 أحرف على الأقل وتشمل حرفاً ورقماً ورمزاً";
+export const PASSWORD_HINT = "كلمة السر 8 حروف أو أرقام على الأقل";
 
 export const MSG = {
   name: "برجاء إدخال اسم صحيح",

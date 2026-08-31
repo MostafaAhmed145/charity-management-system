@@ -8,7 +8,7 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "vitest run src/lib/status.test.js src/lib/validation.test.js"
+    "test": "vitest run"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.10",

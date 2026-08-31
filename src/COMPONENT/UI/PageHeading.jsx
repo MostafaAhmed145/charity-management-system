@@ -1,7 +1,7 @@
 export function PageHeading({ children, className = "" }) {
   return (
     <h1
-      className={`font-ruqaa text-[1.625rem] font-bold tracking-[-0.04em] text-[#1C211E] ${className}`}
+      className={`font-heading text-[1.625rem] font-bold leading-normal text-[#1C211E] ${className}`}
     >
       {children}
     </h1>

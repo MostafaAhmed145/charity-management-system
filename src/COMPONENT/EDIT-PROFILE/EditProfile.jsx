@@ -1,168 +1,129 @@
-import React, { useContext, useEffect } from "react";
+import { useContext, useEffect } from "react";
 import { useFormik } from "formik";
 import { updateProfile } from "firebase/auth";
-import { AuthContext } from "../CONTEXT/Context";
-import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "../../firebase";
+import { AuthContext } from "../CONTEXT/Context";
 import Loading from "../LOADING/Loading";
-
-const PHONE_REGEX = /^01[0125][0-9]{8}$/;
-const NAME_REGEX = /^[a-zA-Z\u0600-\u06FF\s]{3,50}$/;
+import { Button } from "../UI/Button.jsx";
+import { Field } from "../UI/Field.jsx";
+import { PageHeading } from "../UI/PageHeading.jsx";
+import { isValidName, isValidPhone, MSG } from "../../lib/validation.js";
 
 export default function EditProfile() {
+  const { user, loading, userData, setUserData } = useContext(AuthContext);
+  const navigate = useNavigate();
 
-  const { user , loading , userData, setUserData} =  useContext(AuthContext)
-  const navigate = useNavigate()
-
-
+  useEffect(() => {
+    document.title = "تعديل الملف — جمعية الهداية";
+  }, []);
 
   const formik = useFormik({
+    initialValues: {
+      name: userData?.name || user?.displayName || "",
+      email: user?.email || "",
+      phone: userData?.phone || "",
+    },
+    validate: (values) => {
+      const errors = {};
+      if (!isValidName(values.name)) errors.name = MSG.name;
+      if (!isValidPhone(values.phone)) errors.phone = MSG.phone;
+      return errors;
+    },
+    onSubmit: async (values) => {
+      try {
+        await updateProfile(user, {
+          displayName: values.name,
+        });
 
-  initialValues: {
-    name: user?.displayName || "",
-    email: user?.email || "",
-    phone: "",
-  },
+        await setDoc(
+          doc(db, "users", user.uid),
+          {
+            name: values.name,
+            email: user.email,
+            phone: values.phone,
+          },
+          { merge: true }
+        );
 
-  validate: (values) => {
-    const errors = {};
+        if (typeof setUserData === "function") {
+          setUserData({
+            ...(userData || {}),
+            name: values.name,
+            phone: values.phone,
+          });
+        }
 
-    if (!NAME_REGEX.test(values.name?.trim() || "")) {
-      errors.name = "برجاء إدخال اسم صحيح";
-    }
+        toast.success("تم حفظ التعديلات");
+        navigate("/profile");
+      } catch {
+        toast.error(MSG.network);
+      }
+    },
+  });
 
-    if (!PHONE_REGEX.test(values.phone || "")) {
-      errors.phone = "رقم الهاتف غير صحيح";
-    }
+  useEffect(() => {
+    const getUserData = async () => {
+      if (!user) return;
 
-    return errors;
-  },
+      const docSnap = await getDoc(doc(db, "users", user.uid));
 
-  onSubmit: async (values) => {
-    try {
-      await updateProfile(user, {
-        displayName: values.name,
-      });
-
-      await setDoc(doc(db , "users" , user.uid) ,{
-          name: values.name,
-          email: user.email,
-          phone: values.phone,
-      } , {
-        merge : true
-      })
-
-      if (typeof setUserData === "function") {
-        setUserData({
-          ...(userData || {}),
-          name: values.name,
-          phone: values.phone,
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        formik.setValues({
+          name: data.name || "",
+          email: data.email || user.email || "",
+          phone: data.phone || "",
         });
       }
+    };
 
-      toast.success("Profile Updated Successfully");
+    getUserData();
+    // formik identity changes every render
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
-      navigate("/Profile");
-    } catch {
-        toast.error("تعذر حفظ التعديلات. حاول مرة أخرى.");
-    }
-  },
-});
+  if (loading) {
+    return <Loading />;
+  }
 
-
-useEffect(() => {
-  const getUserData = async () => {
-    if (!user) return;
-
-    const docSnap = await getDoc(doc(db, "users", user.uid));
-
-    if (docSnap.exists()) {
-      formik.setValues({
-        name: docSnap.data().name,
-        email: docSnap.data().email,
-        phone: docSnap.data().phone,
-      });
-    }
-  };
-
-  getUserData();
-}, [user]);
-
-
-
-if (loading) {
-  return <Loading/>
-}
-
- 
   return (
-    <div className="bg-gray-100 min-h-screen flex justify-center items-center">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8">
-
-        <h2 className="text-2xl font-bold text-center mb-6 italic">
-          Edit Profile
-        </h2>
-
-        <form onSubmit={formik.handleSubmit}  className="space-y-5">
-
-          <div>
-            <label htmlFor="name" className="block mb-1 font-medium">
-              الاسم
-            </label>
-            <input
-              id="name"
-              type="text"
-              name="name"
-              placeholder="Full Name"
-              value={formik.values.name}
-              onChange={formik.handleChange}
-              onBlur={formik.handleBlur}
-
-              className="w-full p-3 rounded-lg border border-gray-300 outline-none focus:border-blue-500"
-            />
-            {formik.touched.name && formik.errors.name ? (
-              <p className="text-red-500 text-sm mt-1">{formik.errors.name}</p>
-            ) : null}
-          </div>
-
-          <input
-            type="email"
+    <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-md flex-col justify-center px-4 py-10">
+      <div className="rounded-[14px] border border-[#D5DFD9] bg-white p-6">
+        <PageHeading className="mb-6 text-center">تعديل الملف</PageHeading>
+        <form onSubmit={formik.handleSubmit} className="space-y-4">
+          <Field
+            label="الاسم"
+            name="name"
+            value={formik.values.name}
+            onChange={formik.handleChange}
+            onBlur={formik.handleBlur}
+            error={formik.errors.name}
+            touched={formik.touched.name}
+          />
+          <Field
+            label="البريد"
             name="email"
+            type="email"
             value={formik.values.email}
             disabled
-            className="w-full p-3 rounded-lg bg-gray-100 cursor-not-allowed"
           />
-
-          <div>
-            <label htmlFor="phone" className="block mb-1 font-medium">
-              رقم الهاتف
-            </label>
-            <input
-              id="phone"
-              type="text"
-              name="phone"
-              placeholder="Phone Number"
-              value={formik.values.phone}
-              onChange={formik.handleChange}
-              onBlur={formik.handleBlur}
-              className="w-full p-3 rounded-lg border border-gray-300 outline-none focus:border-blue-500"
-            />
-            {formik.touched.phone && formik.errors.phone ? (
-              <p className="text-red-500 text-sm mt-1">{formik.errors.phone}</p>
-            ) : null}
-          </div>
-
-          <button
-            type="submit"
-            className="w-full cursor-pointer bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition"
-          >
-            Save Changes
-          </button>
-
+          <Field
+            label="الموبايل"
+            name="phone"
+            type="tel"
+            value={formik.values.phone}
+            onChange={formik.handleChange}
+            onBlur={formik.handleBlur}
+            error={formik.errors.phone}
+            touched={formik.touched.phone}
+          />
+          <Button type="submit" className="w-full" loading={formik.isSubmitting}>
+            حفظ التعديلات
+          </Button>
         </form>
-
       </div>
     </div>
   );

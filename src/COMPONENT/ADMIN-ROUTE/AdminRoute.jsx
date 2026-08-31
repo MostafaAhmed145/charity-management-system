@@ -6,7 +6,7 @@ import Loading from "../LOADING/Loading";
 export default function AdminRoute({ children }) {
   const { user, role, loading } = useContext(AuthContext);
 
-  if (loading) {
+  if (loading || (user && !role)) {
     return <Loading />;
   }
 
@@ -14,11 +14,9 @@ export default function AdminRoute({ children }) {
     return <Navigate to="/login" replace />;
   }
 
-  if (role !== "admin" && role !== "superAdmin" ) {
-    return <Navigate to="/" replace />;
+  if (role !== "admin" && role !== "superAdmin") {
+    return <Navigate to="/user-home" replace />;
   }
-
-  
 
   return children;
 }

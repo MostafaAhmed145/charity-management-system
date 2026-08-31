@@ -1,12 +1,15 @@
 import { useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { collection, getDocs, query, where } from "firebase/firestore";
+import { toast } from "react-toastify";
 import { db } from "../../firebase";
 import { AuthContext } from "../CONTEXT/Context";
 import { Button } from "../UI/Button.jsx";
 import { PageHeading } from "../UI/PageHeading.jsx";
 import { StatusBadge } from "../UI/StatusBadge.jsx";
+import { PATHS } from "../../lib/paths.js";
 import { maskNationalId, statusReassurance } from "../../lib/status.js";
+import { MSG } from "../../lib/validation.js";
 
 export default function MyCases() {
   const { user } = useContext(AuthContext);
@@ -22,14 +25,15 @@ export default function MyCases() {
     const getMyCases = async () => {
       if (!user) return;
       try {
-        const q = query(
-          collection(db, "cases"),
-          where("userId", "==", user.uid),
-          where("archived", "==", false)
-        );
+        const q = query(collection(db, "cases"), where("userId", "==", user.uid));
         const snapshot = await getDocs(q);
-        setCases(snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() })));
+        setCases(
+          snapshot.docs
+            .map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }))
+            .filter((item) => item.archived !== true)
+        );
       } catch {
+        toast.error(MSG.network);
         setCases([]);
       } finally {
         setLoading(false);
@@ -40,6 +44,13 @@ export default function MyCases() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
+      <button
+        type="button"
+        className="mb-4 text-sm text-[#1F5C45]"
+        onClick={() => navigate(PATHS.userHome)}
+      >
+        رجوع
+      </button>
       <PageHeading className="mb-6">طلباتك</PageHeading>
 
       {loading && (
@@ -53,7 +64,7 @@ export default function MyCases() {
       {!loading && cases.length === 0 && (
         <div className="rounded-[14px] border border-[#D5DFD9] bg-white p-8 text-center">
           <p className="mb-4 text-[#3F5349]">ما عندكش طلبات لسه</p>
-          <Button onClick={() => navigate("/submitCase")}>تقديم طلب</Button>
+          <Button onClick={() => navigate(PATHS.submitCase)}>تقديم طلب</Button>
         </div>
       )}
 

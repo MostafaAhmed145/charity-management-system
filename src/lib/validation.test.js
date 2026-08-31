@@ -6,16 +6,19 @@ import {
 } from "./validation.js";
 
 describe("PASSWORD_REGEX", () => {
-  it.each(["123456", "abcdefg", "Abcdef1", "short1!"])(
-    "rejects weak password %s",
+  it.each(["1234567", "abcdefg", "short1"])(
+    "rejects password shorter than 8 %s",
     (password) => {
       expect(PASSWORD_REGEX.test(password)).toBe(false);
     }
   );
 
-  it("accepts a password with letter, number, and symbol", () => {
-    expect(PASSWORD_REGEX.test("Abcdef1!")).toBe(true);
-  });
+  it.each(["12345678", "abcdefgh", "Abcdef1!", "password"])(
+    "accepts any 8+ characters %s",
+    (password) => {
+      expect(PASSWORD_REGEX.test(password)).toBe(true);
+    }
+  );
 });
 
 describe("isValidPhone", () => {

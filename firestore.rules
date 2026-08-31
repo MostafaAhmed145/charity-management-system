@@ -10,17 +10,11 @@ service cloud.firestore {
     }
 
     function isSuperAdmin() {
-      return isSignedIn() && (
-        request.auth.token.role == "superAdmin"
-        || (userDoc().exists && userDoc().data.role == "superAdmin")
-      );
+      return isSignedIn() && userDoc().exists && userDoc().data.role == "superAdmin";
     }
 
     function isAdmin() {
-      return isSignedIn() && (
-        request.auth.token.role in ["admin", "superAdmin"]
-        || (userDoc().exists && userDoc().data.role in ["admin", "superAdmin"])
-      );
+      return isSignedIn() && userDoc().exists && userDoc().data.role in ["admin", "superAdmin"];
     }
 
     match /users/{userId} {

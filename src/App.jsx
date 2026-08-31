@@ -1,4 +1,4 @@
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { createBrowserRouter, Navigate, RouterProvider } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 
 import Door from "./COMPONENT/DOOR/Door";
@@ -22,6 +22,10 @@ import Trash from "./COMPONENT/TRASH/Trash";
 import SuperAdmin from "./COMPONENT/SUPER-ADMIN/SuperAdmin";
 import SuperAdminRute from "./COMPONENT/SUPER-ADMIN-ROUTE/SuperAdminRute";
 
+function Redirect({ to }) {
+  return <Navigate to={to} replace />;
+}
+
 function App() {
   const myRoute = createBrowserRouter([
     {
@@ -40,26 +44,43 @@ function App() {
           path: "register",
           element: <Register />,
         },
-        
         {
-          path: "ForgotPassword",
+          path: "forgot-password",
           element: <ForgotPassword />,
         },
+        {
+          path: "ForgotPassword",
+          element: <Redirect to="/forgot-password" />,
+        },
 
-        // User
-
+        {
+          path: "user-home",
+          element: (
+            <ProtectedRoute>
+              <UserHome />
+            </ProtectedRoute>
+          ),
+        },
         {
           path: "userHome",
-          element: <ProtectedRoute> <UserHome /> </ProtectedRoute> ,
-        }, 
+          element: <Redirect to="/user-home" />,
+        },
 
         {
-          path: "submitCase",
-          element: <ProtectedRoute> <SubmitCase /> </ProtectedRoute> ,
-        }, 
-        
+          path: "submit-case",
+          element: (
+            <ProtectedRoute>
+              <SubmitCase />
+            </ProtectedRoute>
+          ),
+        },
         {
-          path: "myCases",
+          path: "submitCase",
+          element: <Redirect to="/submit-case" />,
+        },
+
+        {
+          path: "my-cases",
           element: (
             <ProtectedRoute>
               <MyCases />
@@ -67,7 +88,11 @@ function App() {
           ),
         },
         {
-          path: "Profile",
+          path: "myCases",
+          element: <Redirect to="/my-cases" />,
+        },
+        {
+          path: "profile",
           element: (
             <ProtectedRoute>
               <Profile />
@@ -75,17 +100,24 @@ function App() {
           ),
         },
         {
-          path: "editProfile",
+          path: "Profile",
+          element: <Redirect to="/profile" />,
+        },
+        {
+          path: "edit-profile",
           element: (
             <ProtectedRoute>
               <EditProfile />
             </ProtectedRoute>
           ),
         },
-
-        // Admin
         {
-          path: "dashBoard",
+          path: "editProfile",
+          element: <Redirect to="/edit-profile" />,
+        },
+
+        {
+          path: "dashboard",
           element: (
             <AdminRoute>
               <DashBoard />
@@ -105,10 +137,34 @@ function App() {
               element: <Trash />,
             },
             {
+              path: "super-admin",
+              element: (
+                <SuperAdminRute>
+                  <SuperAdmin />
+                </SuperAdminRute>
+              ),
+            },
+            {
               path: "SuperAdmin",
-              element: <SuperAdminRute> <SuperAdmin /> </SuperAdminRute>,
+              element: <Redirect to="/dashboard/super-admin" />,
             },
           ],
+        },
+        {
+          path: "dashBoard",
+          element: <Redirect to="/dashboard" />,
+        },
+        {
+          path: "dashBoard/cases",
+          element: <Redirect to="/dashboard/cases" />,
+        },
+        {
+          path: "dashBoard/trash",
+          element: <Redirect to="/dashboard/trash" />,
+        },
+        {
+          path: "dashBoard/SuperAdmin",
+          element: <Redirect to="/dashboard/super-admin" />,
         },
 
         {

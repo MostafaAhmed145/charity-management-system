@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from "react";
+import { useCallback, useContext, useEffect, useState } from "react";
 import { useFormik } from "formik";
 import { useNavigate } from "react-router-dom";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
@@ -6,8 +6,10 @@ import { toast } from "react-toastify";
 import { db } from "../../firebase";
 import { AuthContext } from "../CONTEXT/Context";
 import { Button } from "../UI/Button.jsx";
+import { ConfirmDialog } from "../UI/ConfirmDialog.jsx";
 import { Field } from "../UI/Field.jsx";
 import { PageHeading } from "../UI/PageHeading.jsx";
+import { PhoneConfirmDialog } from "../UI/PhoneConfirmDialog.jsx";
 import { CASE_TYPES, SUPPORT_TYPES } from "../../lib/caseFields.js";
 import {
   isValidName,
@@ -20,10 +22,34 @@ export default function SubmitCase() {
   const { user } = useContext(AuthContext);
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [phoneOpen, setPhoneOpen] = useState(false);
+  const [sending, setSending] = useState(false);
 
   useEffect(() => {
     document.title = "تقديم طلب — جمعية الهداية";
   }, []);
+
+  const saveCase = useCallback(async (values) => {
+    if (!user) {
+      toast.error("سجّل دخولك الأول");
+      return;
+    }
+    try {
+      await addDoc(collection(db, "cases"), {
+        ...values,
+        userId: user.uid,
+        status: "pending",
+        completed: false,
+        archived: false,
+        createdAt: serverTimestamp(),
+      });
+      toast.success("تم تقديم الطلب بنجاح");
+      navigate("/my-cases");
+    } catch {
+      toast.error(MSG.network);
+    }
+  }, [navigate, user]);
 
   const formik = useFormik({
     initialValues: {
@@ -45,26 +71,7 @@ export default function SubmitCase() {
       if (!values.supportType) errors.supportType = MSG.required;
       return errors;
     },
-    onSubmit: async (values) => {
-      if (!user) {
-        toast.error("سجّل دخولك الأول");
-        return;
-      }
-      try {
-        await addDoc(collection(db, "cases"), {
-          ...values,
-          userId: user.uid,
-          status: "pending",
-          completed: false,
-          archived: false,
-          createdAt: serverTimestamp(),
-        });
-        toast.success("تم تقديم الطلب بنجاح");
-        navigate("/myCases");
-      } catch {
-        toast.error(MSG.network);
-      }
-    },
+    onSubmit: saveCase,
   });
 
   const stepFields = [
@@ -82,8 +89,11 @@ export default function SubmitCase() {
 
   const cancel = () => {
     const dirty = Object.values(formik.values).some((v) => String(v).trim());
-    if (dirty && !window.confirm("هتلغي الطلب؟")) return;
-    navigate("/userHome");
+    if (dirty) {
+      setCancelOpen(true);
+      return;
+    }
+    navigate("/user-home");
   };
 
   return (
@@ -99,7 +109,13 @@ export default function SubmitCase() {
         ))}
       </div>
 
-      <form onSubmit={formik.handleSubmit} className="space-y-4 rounded-[14px] border border-[#D5DFD9] bg-white p-5">
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (step === 2) setPhoneOpen(true);
+        }}
+        className="space-y-4 rounded-[14px] border border-[#D5DFD9] bg-white p-5"
+      >
         {step === 0 && (
           <>
             <Field label="اسم الحالة" name="userName" value={formik.values.userName} onChange={formik.handleChange} onBlur={formik.handleBlur} error={formik.errors.userName} touched={formik.touched.userName} />
@@ -153,10 +169,35 @@ export default function SubmitCase() {
           {step < 2 ? (
             <Button type="button" onClick={goNext}>التالي</Button>
           ) : (
-            <Button type="submit" loading={formik.isSubmitting}>إرسال الطلب</Button>
+            <Button type="submit">إرسال الطلب</Button>
           )}
         </div>
       </form>
+      <PhoneConfirmDialog
+        open={phoneOpen}
+        onClose={() => setPhoneOpen(false)}
+        phone={formik.values.phone}
+        loading={sending}
+        onConfirm={async (phone) => {
+          setSending(true);
+          try {
+            formik.setFieldValue("phone", phone, false);
+            await saveCase({ ...formik.values, phone });
+            setPhoneOpen(false);
+          } finally {
+            setSending(false);
+          }
+        }}
+      />
+      <ConfirmDialog
+        open={cancelOpen}
+        onClose={() => setCancelOpen(false)}
+        onConfirm={() => navigate("/user-home")}
+        title="إلغاء الطلب"
+        body="هتلغي الطلب؟ البيانات اللي كتبتها مش هتتحفظ."
+        confirmLabel="إلغاء الطلب"
+        danger
+      />
     </div>
   );
 }

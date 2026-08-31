@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { AuthContext } from "../CONTEXT/Context";
 import { Button } from "../UI/Button.jsx";
 import { LogoLockup } from "../UI/LogoLockup.jsx";
+import { PATHS } from "../../lib/paths.js";
 
 export default function Door() {
   const { user } = useContext(AuthContext);
@@ -15,7 +16,7 @@ export default function Door() {
   return (
     <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-lg flex-col justify-between px-4 py-10">
       <div className="flex flex-1 flex-col items-center justify-center text-center">
-        <LogoLockup size={48} showWord word="جمعية الهداية" />
+        <LogoLockup size={56} showWord variant="hero" />
         <p className="mt-6 text-base leading-7 text-[#3F5349]">
           أهل بيتك… لو محتاج مساعدة، إحنا هنا.
         </p>
@@ -23,14 +24,14 @@ export default function Door() {
         <div className="mt-8 flex w-full flex-col gap-3">
           <Button
             className="w-full"
-            onClick={() => navigate(user ? "/submitCase" : "/register")}
+            onClick={() => navigate(user ? PATHS.submitCase : PATHS.register)}
           >
             تقديم طلب مساعدة
           </Button>
           <Button
             variant="secondary"
             className="w-full"
-            onClick={() => navigate(user ? "/myCases" : "/login")}
+            onClick={() => navigate(user ? PATHS.myCases : PATHS.login)}
           >
             متابعة طلب
           </Button>

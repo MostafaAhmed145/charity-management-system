@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
-import { collection, deleteDoc, doc, getDocs, updateDoc } from "firebase/firestore";
+import { collection, getDocs } from "firebase/firestore";
 import { toast } from "react-toastify";
 import { db } from "../../firebase";
 import { Button } from "../UI/Button.jsx";
 import { ConfirmDialog } from "../UI/ConfirmDialog.jsx";
 import { PageHeading } from "../UI/PageHeading.jsx";
+import { deleteUserAccountSecure, setUserRoleSecure } from "../../lib/secureOps.js";
 import { MSG } from "../../lib/validation.js";
 
 function roleLabel(role) {
@@ -45,7 +46,7 @@ export default function SuperAdmin() {
     if (!roleUser) return;
     const newRole = roleUser.role === "admin" ? "user" : "admin";
     try {
-      await updateDoc(doc(db, "users", roleUser.id), { role: newRole });
+      await setUserRoleSecure(roleUser.id, newRole);
       setUsers((prev) =>
         prev.map((item) => (item.id === roleUser.id ? { ...item, role: newRole } : item))
       );
@@ -58,7 +59,7 @@ export default function SuperAdmin() {
   const removeAccount = async () => {
     if (!deleteUser) return;
     try {
-      await deleteDoc(doc(db, "users", deleteUser.id));
+      await deleteUserAccountSecure(deleteUser.id);
       setUsers((prev) => prev.filter((item) => item.id !== deleteUser.id));
       toast.success("تم حذف الحساب");
     } catch {

@@ -40,6 +40,6 @@ npx firebase deploy --only firestore:rules
 
 - `firebase: command not found` — استخدم `npx firebase` من جذر المشروع.
 - `403` — الحساب الحالي ليس Owner/Editor على المشروع. أعد `npx firebase login --reauth` بالحساب الصحيح.
-- فشل الـ Functions — يحتاج خطة Blaze. ارفع القواعد وحدها بالأمر الأخير أعلاه.
+- فشل الـ Functions — يحتاج خطة Blaze. ارفع القواعد وحدها بالأمر الأخير أعلاه. تغيير الصلاحيات وحذف الحسابات يتطلب Functions ولا يوجد مسار بديل عبر Firestore فقط.
 
 أول `superAdmin` يُعيَّن يدوياً من Firestore Console على مستند `users/{uid}`: `role: "superAdmin"`.

@@ -82,7 +82,7 @@ export default function CaseModal({
         <div className="flex min-h-full items-center justify-center p-4">
           <DialogPanel className="relative w-full max-w-2xl rounded-[14px] border border-[#D5DFD9] bg-white shadow-lg">
             <div className="border-b border-[#D5DFD9] p-6">
-              <h2 className="font-ruqaa text-2xl text-[#1C211E]">
+              <h2 className="font-heading text-2xl font-bold leading-normal text-[#1C211E]">
                 {selectedCase ? "تعديل البيانات" : "إضافة حالة"}
               </h2>
               <p className="mt-1 text-sm text-[#3F5349]">

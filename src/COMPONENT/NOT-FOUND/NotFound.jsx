@@ -10,9 +10,9 @@ export default function NotFound() {
 
   return (
     <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-lg flex-col items-center justify-center px-4 text-center">
-      <LogoLockup size={48} showWord />
-      <p className="mt-8 font-ruqaa text-6xl text-[#1F5C45]">404</p>
-      <h1 className="mt-4 font-ruqaa text-2xl text-[#1C211E]">الصفحة غير موجودة</h1>
+      <LogoLockup size={56} showWord variant="hero" />
+      <p className="mt-8 font-heading text-6xl font-bold leading-none text-[#1F5C45]">404</p>
+      <h1 className="mt-4 font-heading text-2xl font-bold leading-normal text-[#1C211E]">الصفحة غير موجودة</h1>
       <p className="mt-2 text-sm text-[#3F5349]">
         الصفحة دي مش موجودة أو اتنقلت.
       </p>

@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { AuthContext } from "../CONTEXT/Context";
 import { Button } from "../UI/Button.jsx";
 import { PageHeading } from "../UI/PageHeading.jsx";
+import { PATHS } from "../../lib/paths.js";
 
 export default function UserHome() {
   const { userData } = useContext(AuthContext);
@@ -22,14 +23,14 @@ export default function UserHome() {
 
       <div className="space-y-3">
         <Link
-          to="/submitCase"
+          to={PATHS.submitCase}
           className="block rounded-[14px] border border-[#D5DFD9] bg-white p-4"
         >
           <strong className="block text-[#1C211E]">تقديم طلب</strong>
           <span className="text-sm text-[#3F5349]">اكتب بيانات الحالة في خطوات قصيرة</span>
         </Link>
         <Link
-          to="/myCases"
+          to={PATHS.myCases}
           className="block rounded-[14px] border border-[#D5DFD9] bg-white p-4"
         >
           <strong className="block text-[#1C211E]">متابعة طلباتك</strong>
@@ -46,7 +47,7 @@ export default function UserHome() {
         </a>
       </div>
 
-      <Button className="mt-8 w-full" onClick={() => navigate("/submitCase")}>
+      <Button className="mt-8 w-full" onClick={() => navigate(PATHS.submitCase)}>
         تقديم طلب مساعدة
       </Button>
     </section>

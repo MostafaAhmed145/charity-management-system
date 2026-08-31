@@ -40,8 +40,9 @@ body {
   font-family: "IBM Plex Sans Arabic", sans-serif;
 }
 
-.font-ruqaa {
-  font-family: "Aref Ruqaa", serif;
+.font-heading,
+.font-wordmark {
+  font-family: "Cairo", "IBM Plex Sans Arabic", sans-serif;
 }
 
 *:focus-visible {

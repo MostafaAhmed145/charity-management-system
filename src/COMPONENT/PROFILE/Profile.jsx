@@ -43,7 +43,7 @@ export default function Profile() {
             الهاتف: {userData?.phone || "غير مسجّل"}
           </p>
         </div>
-        <Button className="mt-6 w-full" onClick={() => navigate("/editProfile")}>
+        <Button className="mt-6 w-full" onClick={() => navigate("/edit-profile")}>
           تعديل الملف
         </Button>
       </div>
