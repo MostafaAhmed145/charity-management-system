@@ -1,216 +1,325 @@
 import { getAuth, signOut } from "firebase/auth";
-import React, { useContext, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import React, { useContext, useEffect, useRef, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import app from "../../firebase";
 import { toast } from "react-toastify";
 import { AuthContext } from "../CONTEXT/Context";
-import { LogOut } from "lucide-react";
+import { useDashboardNav } from "../DASH-BOARD/dashboardNavContext.jsx";
+import { LogoLockup } from "../UI/LogoLockup.jsx";
+import { CircleUser, Menu, X } from "lucide-react";
+import { PATHS } from "../../lib/paths.js";
 
-export default function NavBar() {
+function getFirstName(name) {
+  if (!name || typeof name !== "string") return "";
+  return name.trim().split(/\s+/)[0] ?? "";
+}
 
-  const { user , userData, setUserData , role} = useContext(AuthContext)
-  const [open, setOpen] = useState(false);
+function getAvatarLetter(name) {
+  const first = getFirstName(name);
+  if (!first) return "";
+  return first.charAt(0);
+}
 
-  const auth = getAuth(app)
-  const navigate = useNavigate()
+function useDismissible(open, setOpen) {
+  const rootRef = useRef(null);
 
-    async function Logout() {
-      try{
-        await signOut( auth )
-        toast.success("تم تسجيل الخروج بنجاح");
-        navigate("/login" , { replace: true })
-
-      }catch(err){
-        toast.error("حدث خطا ما")
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    const onPointer = (e) => {
+      if (rootRef.current && !rootRef.current.contains(e.target)) {
+        setOpen(false);
       }
-    }
+    };
+    window.addEventListener("keydown", onKey);
+    document.addEventListener("pointerdown", onPointer);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.removeEventListener("pointerdown", onPointer);
+    };
+  }, [open, setOpen]);
+
+  return rootRef;
+}
+
+const menuItemClass =
+  "flex min-h-11 items-center rounded-xl px-3 text-sm font-medium text-hidaya-accent hover:bg-hidaya-tint";
+
+function GuestAccountMenu() {
+  const [open, setOpen] = useState(false);
+  const rootRef = useDismissible(open, setOpen);
 
   return (
-    <nav className="bg-gray-800 shadow-md fixed top-0 left-0 right-0">
-      <div className="mx-auto max-w-7xl px-4">
-        <div className="flex h-16 items-center justify-between">
-          {/* Logo */}
+    <div ref={rootRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="inline-flex min-h-11 min-w-11 items-center justify-center text-hidaya-body"
+        aria-label="الحساب"
+        aria-expanded={open}
+        aria-haspopup="menu"
+      >
+        {open ? <X className="h-7 w-7" /> : <CircleUser className="h-7 w-7" />}
+      </button>
+      {open && (
+        <div
+          role="menu"
+          className="absolute top-full left-0 z-40 mt-2 w-48 rounded-xl border border-hidaya-line bg-white p-2 shadow-lg"
+        >
           <Link
-            to="/"
-            className="text-white text-2xl md:text-3xl font-extrabold tracking-wide"
+            to={PATHS.register}
+            role="menuitem"
+            onClick={() => setOpen(false)}
+            className={menuItemClass}
           >
-             جمعية الهدايه
+            إنشاء حساب
           </Link>
+          <Link
+            to={PATHS.login}
+            role="menuitem"
+            onClick={() => setOpen(false)}
+            className={menuItemClass}
+          >
+            تسجيل الدخول
+          </Link>
+        </div>
+      )}
+    </div>
+  );
+}
 
-          {/* Desktop Menu */}
-          <div className="hidden md:flex items-center gap-4">
+function AccountMenu({ avatarLetter, showBeneficiaryHome, onLogout }) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useDismissible(open, setOpen);
 
-            {/* {user ?  : ""} */}
-            
-
-            {user ? <>
-            
-
-            {role === "admin" ||  role === "superAdmin" ? <Link
-              to="/dashBoard"
-              className="rounded-md bg-gray-900 px-3 py-2 text-sm font-medium text-white"
-            >
-               لوحة التحكم
-            </Link> : ""}
-
+  return (
+    <div ref={rootRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex h-10 w-10 items-center justify-center rounded-full bg-hidaya-accent text-sm font-bold text-hidaya-body"
+        aria-label="الحساب"
+        aria-expanded={open}
+        aria-haspopup="menu"
+      >
+        {avatarLetter}
+      </button>
+      {open && (
+        <div
+          role="menu"
+          className="absolute top-full left-0 z-40 mt-2 w-48 rounded-xl border border-hidaya-line bg-white p-2 shadow-lg"
+        >
+          <Link
+            to={PATHS.profile}
+            role="menuitem"
+            onClick={() => setOpen(false)}
+            className={menuItemClass}
+          >
+            الملف الشخصي
+          </Link>
+          {showBeneficiaryHome && (
             <Link
-              to="/userHome"
-              className="rounded-md bg-gray-900 px-3 py-2 text-sm font-medium text-white"
+              to={PATHS.userHome}
+              role="menuitem"
+              onClick={() => setOpen(false)}
+              className={menuItemClass}
             >
-              واجهة المستخدم 
-            </Link> 
-
-              
-            <button onClick={Logout} className=" capitalize rounded p-1 text-white bg-red-600  hover:bg-red-500 transition-all duration-300 cursor-pointer font-bold"><LogOut /></button>
-            
-            </> : <>
-            
-             <Link
-              to="/register"
-              className="rounded-md px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white transition"
-            >
-              Register
+              واجهة المستفيد
             </Link>
+          )}
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              setOpen(false);
+              onLogout();
+            }}
+            className={`${menuItemClass} w-full`}
+          >
+            تسجيل الخروج
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
 
-            <Link
-              to="/login"
-              className="rounded-md px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white transition"
+export default function NavBar() {
+  const { user, userData, role } = useContext(AuthContext);
+  const { open: sidebarOpen, toggle: toggleSidebar, enabled: sidebarEnabled } = useDashboardNav();
+  const [open, setOpen] = useState(false);
+  const [narrow, setNarrow] = useState(false);
+
+  const auth = getAuth(app);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const onDashboard = location.pathname.startsWith(PATHS.dashboard);
+  const onUserHome = location.pathname.startsWith(PATHS.userHome);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 380px)");
+    const update = () => setNarrow(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+
+  useEffect(() => {
+    setOpen(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
+
+  async function Logout() {
+    try {
+      await signOut(auth);
+      toast.success("تم تسجيل الخروج بنجاح");
+      navigate(PATHS.login, { replace: true });
+    } catch {
+      toast.error("تعذر تسجيل الخروج، حاول مرة تانية");
+    }
+  }
+
+  const isAdmin = role === "admin" || role === "superAdmin";
+  const firstName = getFirstName(userData?.name);
+  const avatarLetter = getAvatarLetter(userData?.name);
+  const showDashboardLink = isAdmin && !onDashboard;
+  const showBeneficiaryHome = isAdmin && !onUserHome;
+  const showSidebarToggle = Boolean(user && isAdmin && onDashboard && sidebarEnabled);
+
+  return (
+    <nav className="fixed top-0 right-0 left-0 z-50 h-16 bg-hidaya-accent-dark shadow-md">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4">
+        <div className="flex min-w-0 items-center gap-2">
+          {showSidebarToggle ? (
+            <button
+              type="button"
+              onClick={toggleSidebar}
+              className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-hidaya-body transition-colors duration-200 hover:bg-hidaya-accent"
+              aria-label={sidebarOpen ? "إغلاق قائمة لوحة التحكم" : "فتح قائمة لوحة التحكم"}
+              aria-expanded={sidebarOpen}
+              aria-controls="dashboard-sidebar"
             >
-              Login
-            </Link>
-            
-            </>}
+              {sidebarOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            </button>
+          ) : null}
+          <Link to="/" className="shrink-0">
+            <LogoLockup
+              size={40}
+              showWord
+              word={narrow ? "الهداية" : "جمعية الهداية"}
+              onDark
+            />
+          </Link>
+        </div>
 
-           
+        {!user ? (
+          <GuestAccountMenu />
+        ) : (
+          <>
+            <div className="hidden items-center gap-4 md:flex">
+              {showDashboardLink && (
+                <Link
+                  to={PATHS.dashboard}
+                  className="rounded-md px-3 py-2 text-sm font-medium text-hidaya-body/90 transition hover:text-hidaya-body"
+                >
+                  لوحة التحكم
+                </Link>
+              )}
 
-          </div>
+              {firstName && (
+                <span className="text-sm font-medium text-hidaya-body">{firstName}</span>
+              )}
 
-          {/* Right Side */}
-          <div className="flex items-center gap-3 justify-center overflow-hidden">
-
-            {user?.photoURL ? <>
-            
-            
-              <img
-                onClick={() => navigate("/profile")}
-                src={user.photoURL}
-                alt="Profile"
-                className="w-10 h-10 rounded-full object-cover border border-gray-500 cursor-pointer"
+              <AccountMenu
+                avatarLetter={avatarLetter}
+                showBeneficiaryHome={showBeneficiaryHome}
+                onLogout={Logout}
               />
 
-            </>  : (
-              <div
-                onClick={() => navigate("/profile")}
-                className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold cursor-pointer"
+              <button
+                type="button"
+                onClick={Logout}
+                className="text-sm font-medium text-hidaya-body/90 transition hover:text-hidaya-body"
               >
-                {userData?.name?.charAt(0).toUpperCase() || "a" }
+                تسجيل الخروج
+              </button>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setOpen(!open)}
+              className="text-hidaya-body md:hidden"
+              aria-label={open ? "إغلاق قائمة الحساب" : "فتح قائمة الحساب"}
+            >
+              {open ? <X className="h-7 w-7" /> : <CircleUser className="h-7 w-7" />}
+            </button>
+          </>
+        )}
+      </div>
+
+      {user && open && (
+        <div className="border-t border-hidaya-accent bg-hidaya-accent-dark px-4 pb-4 md:hidden">
+          <div className="space-y-2 pt-2">
+            {firstName && (
+              <div className="flex items-center gap-3 px-3 py-2">
+                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-hidaya-accent text-sm font-bold text-hidaya-body">
+                  {avatarLetter}
+                </span>
+                <span className="text-sm font-medium text-hidaya-body">{firstName}</span>
               </div>
             )}
-            <button
-              onClick={() => setOpen(!open)}
-              className="md:hidden text-gray-300 hover:text-white"
+
+            {showDashboardLink && (
+              <Link
+                to={PATHS.dashboard}
+                className="block rounded-md px-3 py-2 text-hidaya-body hover:bg-hidaya-accent"
+                onClick={() => setOpen(false)}
+              >
+                لوحة التحكم
+              </Link>
+            )}
+
+            {showBeneficiaryHome && (
+              <Link
+                to={PATHS.userHome}
+                className="block rounded-md px-3 py-2 text-hidaya-body hover:bg-hidaya-accent"
+                onClick={() => setOpen(false)}
+              >
+                واجهة المستفيد
+              </Link>
+            )}
+
+            <Link
+              to={PATHS.profile}
+              className="block rounded-md px-3 py-2 text-hidaya-body hover:bg-hidaya-accent"
+              onClick={() => setOpen(false)}
             >
-              {open ? (
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="w-7 h-7"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              ) : (
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="w-7 h-7"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M4 6h16M4 12h16M4 18h16"
-                  />
-                </svg>
-              )}
+              الملف الشخصي
+            </Link>
+
+            <button
+              type="button"
+              onClick={() => {
+                setOpen(false);
+                Logout();
+              }}
+              className="block w-full rounded-md px-3 py-2 text-right text-sm font-medium text-hidaya-body hover:bg-hidaya-accent"
+            >
+              تسجيل الخروج
             </button>
           </div>
         </div>
-
-        {/* Mobile Menu */}
-        {/* Mobile Menu */}
-{open && (
-  <div className="md:hidden pb-4 space-y-2">
-
-    {user ? (
-      <>
-        {role === "admin" && (
-          <Link
-            to="/dashBoard"
-            className="block rounded-md px-3 py-2 text-white hover:bg-gray-700"
-            onClick={() => setOpen(false)}
-          >
-            لوحة التحكم
-          </Link>
-        )}
-
-        <Link
-          to="/userHome"
-          className="block rounded-md px-3 py-2 text-white hover:bg-gray-700"
-          onClick={() => setOpen(false)}
-        >
-          واجهة المستخدم
-        </Link>
-
-        <Link
-          to="/profile"
-          className="block rounded-md px-3 py-2 text-white hover:bg-gray-700"
-          onClick={() => setOpen(false)}
-        >
-          الملف الشخصي
-        </Link>
-
-        <button
-          onClick={() => {
-            setOpen(false);
-            Logout();
-          }}
-          className="w-full text-right rounded-md px-3 py-2 text-white bg-red-600 hover:bg-red-500"
-        >
-          تسجيل الخروج
-        </button>
-      </>
-    ) : (
-      <>
-        <Link
-          to="/register"
-          className="block rounded-md px-3 py-2 text-gray-300 hover:bg-gray-700 hover:text-white"
-          onClick={() => setOpen(false)}
-        >
-          إنشاء حساب
-        </Link>
-
-        <Link
-          to="/login"
-          className="block rounded-md px-3 py-2 text-gray-300 hover:bg-gray-700 hover:text-white"
-          onClick={() => setOpen(false)}
-        >
-          تسجيل الدخول
-        </Link>
-      </>
-    )}
-
-  </div>
-)}
-      </div>
+      )}
     </nav>
   );
 }

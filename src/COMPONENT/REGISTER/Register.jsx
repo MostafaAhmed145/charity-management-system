@@ -1,194 +1,130 @@
-import { useFormik } from 'formik'
-import React from 'react'
-import app, { db } from '../../firebase'
-import { createUserWithEmailAndPassword, getAuth } from 'firebase/auth'
-import { useNavigate } from 'react-router-dom'
-import { toast } from 'react-toastify'
+import { useContext, useEffect, useState } from "react";
+import { useFormik } from "formik";
+import { Link, Navigate } from "react-router-dom";
+import { createUserWithEmailAndPassword, getAuth } from "firebase/auth";
+import { FcGoogle } from "react-icons/fc";
+import { toast } from "react-toastify";
+import app from "../../firebase";
+import { AuthContext } from "../CONTEXT/Context";
+import Loading from "../LOADING/Loading";
+import { ensureUserProfile } from "../../lib/ensureUserProfile";
+import { getAuthErrorMessage } from "../../lib/authErrors";
+import { signInWithGoogle } from "../../lib/googleAuth.js";
+import { homeForRole } from "../../lib/resolveRole.js";
+import { Button } from "../UI/Button.jsx";
+import { Field } from "../UI/Field.jsx";
+import { LogoLockup } from "../UI/LogoLockup.jsx";
+import { PageHeading } from "../UI/PageHeading.jsx";
 import {
-  collection,
-  doc,
-  getDocs,
-  query,
-  setDoc,
-  where
-} from "firebase/firestore";
+  isValidEmail,
+  isValidName,
+  isValidPassword,
+  isValidPhone,
+  MSG,
+} from "../../lib/validation.js";
 
 export default function Register() {
+  const { user, role, loading, refreshSession } = useContext(AuthContext);
+  const auth = getAuth(app);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
-  const auth = getAuth(app)
+  useEffect(() => {
+    document.title = "إنشاء حساب — جمعية الهداية";
+  }, []);
 
+  const formik = useFormik({
+    initialValues: { name: "", email: "", phone: "", password: "", rePassword: "" },
+    validate: (values) => {
+      const errors = {};
+      if (!isValidName(values.name)) errors.name = MSG.name;
+      if (!isValidEmail(values.email)) errors.email = MSG.email;
+      if (!isValidPhone(values.phone)) errors.phone = MSG.phone;
+      if (!isValidPassword(values.password)) errors.password = MSG.password;
+      if (values.rePassword !== values.password) errors.rePassword = MSG.passwordMatch;
+      return errors;
+    },
+    onSubmit: async (values) => {
+      try {
+        const userCredential = await createUserWithEmailAndPassword(
+          auth,
+          values.email,
+          values.password
+        );
 
-  const navigate = useNavigate()
-  
+        await ensureUserProfile(userCredential.user, {
+          name: values.name,
+          phone: values.phone,
+          email: values.email,
+        });
+        await refreshSession();
 
-  const myFormik = useFormik({
-    initialValues : {
-      name : "" , 
-      email : "" ,
-      phone : "" ,
-      password : "" ,
-      rePassword : "" 
-    } ,
-
-    
-
-    onSubmit : async (values)=>{
-
-           try{
-
-            const phoneQuery = query(
-              collection(db , "users"),
-              where("phone" , "==", values.phone)
-            )
-
-            const phoneSnapshot = await getDocs(phoneQuery);
-
-            if (!phoneSnapshot.empty) {
-              toast.error("رقم الهاتف مستخدم بالفعل");
-              return;
-            }
-              const userCredential = await createUserWithEmailAndPassword(
-                 auth ,
-                values.email ,
-                values.password
-            )
-
-
-            await setDoc(doc( db , "users" , userCredential.user.uid) , {
-                uid: userCredential.user.uid,
-                name: values.name,
-                phone: values.phone,
-                email: values.email,
-                role : "user" ,
-                createdAt: new Date(),
-            })
-
-            toast.success("تم التسجيل بنجاح " , 3000)
-
-             
-
-            setTimeout(()=>{
-                navigate("/login")
-            } , 2500)
-
-           }catch(err){
-              toast.error("error ")
-              
-           }
-
-
-
-
-    } , 
-
-
-   validate: (values) => {
-
-      const errors = {}
-
-      const regxName = /^[a-zA-Z\u0600-\u06FF\s]{3,50}$/
-      const regxEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-      const regxPhone = /^01[0125][0-9]{8}$/
-      const regxPassword = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,}$/
-
-      if (!regxName.test(values.name)) {
-        errors.name = "The Name Is Not Valid"
+        toast.success("تم إنشاء الحساب");
+      } catch (err) {
+        toast.error(getAuthErrorMessage(err));
       }
+    },
+  });
 
-      if (!regxEmail.test(values.email)) {
-        errors.email = "The Email Is Not Valid"
-      }
-
-      if (!regxPhone.test(values.phone)) {
-        errors.phone = "The Phone Is Not Valid"
-      }
-
-      if (!regxPassword.test(values.password)) {
-        errors.password = "Password must be at least 6 characters and contain letters and numbers"
-      }
-
-      if (values.rePassword !== values.password) {
-        errors.rePassword = "Passwords Do Not Match"
-      }
-
-      return errors
-
+  const registerGoogle = async () => {
+    setGoogleLoading(true);
+    try {
+      const { isNewUser } = await signInWithGoogle(auth);
+      await refreshSession();
+      toast.success(isNewUser ? "تم إنشاء الحساب" : "تم تسجيل الدخول بنجاح");
+    } catch (err) {
+      toast.error(getAuthErrorMessage(err));
+    } finally {
+      setGoogleLoading(false);
     }
+  };
 
+  if (loading || (user && !role)) {
+    return <Loading />;
+  }
 
-  })
-  return <>
-  
+  const home = homeForRole(role);
+  if (user && home) {
+    return <Navigate to={home} replace />;
+  }
 
-  <div className="min-h-screen flex justify-center bg-gray-100 p-5 items-center">
-    <div className=' p-2 rounded-lg  shadow-lg bg-white  w-full max-w-md m-auto ' >
-            <h1 className=' text-center text-3xl italic font-bold p-3 text-gray-800 mb-6 '>Register</h1>
-           <form onSubmit={myFormik.handleSubmit} className="space-y-4 p-3 m-auto">
-                <input onBlur={myFormik.handleBlur} onChange={myFormik.handleChange} value={myFormik.values.name} className=' w-full  p-3 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-400' type="text" placeholder='Name' name='name'/>
-                {myFormik.touched.name && myFormik.errors.name ? <div className='bg-red-400 p-1 text-white rounded alert alert-danger '>{myFormik.errors.name}</div> : ""}
-                <input
-                    onBlur={myFormik.handleBlur}
-                    onChange={myFormik.handleChange}
-                    value={myFormik.values.email}
-                    className='w-full p-3 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-400'
-                    type="email"
-                    placeholder='Email'
-                    name='email'
-                  />
-                  {myFormik.touched.email && myFormik.errors.email ? (
-                    <div className='bg-red-400 p-1 text-white rounded alert alert-danger'>
-                      {myFormik.errors.email}
-                    </div>
-                  ) : ""}
+  return (
+    <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-md flex-col justify-center px-4 py-10">
+      <div className="rounded-[14px] border border-[#D5DFD9] bg-white p-6">
+        <div className="mb-6 flex justify-center">
+          <LogoLockup
+            size={56}
+            showWord
+            variant="hero"
+            wordClassName="text-[#1F5C45]"
+          />
+        </div>
+        <PageHeading className="mb-6 text-center">إنشاء حساب</PageHeading>
 
-                  <input
-                    onBlur={myFormik.handleBlur}
-                    onChange={myFormik.handleChange}
-                    value={myFormik.values.phone}
-                    className='w-full p-3 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-400'
-                    type="tel"
-                    placeholder='Phone'
-                    name='phone'
-                  />
-                  {myFormik.touched.phone && myFormik.errors.phone ? (
-                    <div className='bg-red-400 p-1 text-white rounded alert alert-danger'>
-                      {myFormik.errors.phone}
-                    </div>
-                  ) : ""}
+        <Button type="button" variant="secondary" className="w-full" loading={googleLoading} onClick={registerGoogle}>
+          <FcGoogle size={20} />
+          الدخول باستخدام Google
+        </Button>
 
-                  <input
-                    onBlur={myFormik.handleBlur}
-                    onChange={myFormik.handleChange}
-                    value={myFormik.values.password}
-                    className='w-full p-3 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-400'
-                    type="password"
-                    placeholder='Password'
-                    name='password'
-                  />
-                  {myFormik.touched.password && myFormik.errors.password ? (
-                    <div className='bg-red-400 p-1 text-white rounded alert alert-danger'>
-                      {myFormik.errors.password}
-                    </div>
-                  ) : ""}
+        <p className="my-5 text-center text-sm text-[#3F5349]">أو بالبريد</p>
 
-                  <input
-                    onBlur={myFormik.handleBlur}
-                    onChange={myFormik.handleChange}
-                    value={myFormik.values.rePassword}
-                    className='w-full p-3 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-400'
-                    type="password"
-                    placeholder='Confirm Password'
-                    name='rePassword'
-                  />
-                  {myFormik.touched.rePassword && myFormik.errors.rePassword ? (
-                    <div className='bg-red-400 p-1 text-white rounded alert alert-danger'>
-                      {myFormik.errors.rePassword}
-                    </div>
-                  ) : ""}
-                <button type='submit' className="w-full p-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-300 cursor-pointer font-medium capitalize">register</button>
-           </form>
+        <form onSubmit={formik.handleSubmit} className="space-y-4">
+          <Field label="الاسم" name="name" value={formik.values.name} onChange={formik.handleChange} onBlur={formik.handleBlur} error={formik.errors.name} touched={formik.touched.name} />
+          <Field label="البريد" name="email" type="email" value={formik.values.email} onChange={formik.handleChange} onBlur={formik.handleBlur} error={formik.errors.email} touched={formik.touched.email} />
+          <Field label="الموبايل" name="phone" type="tel" value={formik.values.phone} onChange={formik.handleChange} onBlur={formik.handleBlur} error={formik.errors.phone} touched={formik.touched.phone} />
+          <Field label="كلمة السر" name="password" type="password" value={formik.values.password} onChange={formik.handleChange} onBlur={formik.handleBlur} error={formik.errors.password} touched={formik.touched.password} autoComplete="new-password" />
+          <Field label="تأكيد كلمة السر" name="rePassword" type="password" value={formik.values.rePassword} onChange={formik.handleChange} onBlur={formik.handleBlur} error={formik.errors.rePassword} touched={formik.touched.rePassword} autoComplete="new-password" />
+          <Button type="submit" className="w-full" loading={formik.isSubmitting}>
+            إنشاء حساب
+          </Button>
+        </form>
+
+        <p className="mt-6 text-center text-sm text-[#3F5349]">
+          عندك حساب؟{" "}
+          <Link to="/login" className="text-[#1F5C45]">
+            دخول
+          </Link>
+        </p>
+      </div>
     </div>
-  </div>
-  </> 
-  
+  );
 }

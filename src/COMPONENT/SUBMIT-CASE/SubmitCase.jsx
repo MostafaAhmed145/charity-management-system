@@ -1,17 +1,56 @@
-import React, { useState } from "react";
+import { useCallback, useContext, useEffect, useState } from "react";
 import { useFormik } from "formik";
-import { db } from "../../firebase";
-import { useContext } from "react";
+import { useNavigate } from "react-router-dom";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
-import { AuthContext } from "../CONTEXT/Context";
 import { toast } from "react-toastify";
+import { db } from "../../firebase";
+import { AuthContext } from "../CONTEXT/Context";
+import { Button } from "../UI/Button.jsx";
+import { ConfirmDialog } from "../UI/ConfirmDialog.jsx";
+import { Field } from "../UI/Field.jsx";
+import { PageHeading } from "../UI/PageHeading.jsx";
+import { PhoneConfirmDialog } from "../UI/PhoneConfirmDialog.jsx";
+import { CASE_TYPES, SUPPORT_TYPES } from "../../lib/caseFields.js";
+import {
+  isValidName,
+  isValidNationalId,
+  isValidPhone,
+  MSG,
+} from "../../lib/validation.js";
 
 export default function SubmitCase() {
+  const { user } = useContext(AuthContext);
+  const navigate = useNavigate();
+  const [step, setStep] = useState(0);
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [phoneOpen, setPhoneOpen] = useState(false);
+  const [sending, setSending] = useState(false);
 
-  const { user } = useContext(AuthContext)
-  const [loading , setLoading ] = useState(false)
+  useEffect(() => {
+    document.title = "تقديم طلب — جمعية الهداية";
+  }, []);
 
-   
+  const saveCase = useCallback(async (values) => {
+    if (!user) {
+      toast.error("سجّل دخولك الأول");
+      return;
+    }
+    try {
+      await addDoc(collection(db, "cases"), {
+        ...values,
+        userId: user.uid,
+        status: "pending",
+        completed: false,
+        archived: false,
+        createdAt: serverTimestamp(),
+      });
+      toast.success("تم تقديم الطلب بنجاح");
+      navigate("/my-cases");
+    } catch {
+      toast.error(MSG.network);
+    }
+  }, [navigate, user]);
+
   const formik = useFormik({
     initialValues: {
       userName: "",
@@ -22,308 +61,143 @@ export default function SubmitCase() {
       supportType: "",
       notes: "",
     },
-
-    onSubmit: async (values) => {
-      try{
-              console.log("Submit Case:", values);
-
-              if (!user) {
-              toast.error("User is not logged in");
-              return;
-            }
-
-            setLoading(true) 
-
-      await addDoc(collection(db , "cases") , {
-        ...values ,
-        userId: user.uid,
-        status: "pending",
-        completed: false,
-        createdAt: serverTimestamp(),
-      })
-
-      console.log("Case submitted successfully");
-
-      toast.success("تم تقديم الطلب بنجاح")
-
-      
-
-       formik.resetForm();
-      }catch(err){
-             console.log("Error submitting case:", err);
-             toast.error(" حدث خطا ما اثناء تقديم الطلب حاول مره اخري او راسل المختص")
-        
-            }finally{
-        setLoading(false)
-      }
-    },
-
     validate: (values) => {
       const errors = {};
-
-      const regxName = /^[a-zA-Z\u0600-\u06FF\s]{3,50}$/;
-      const regxPhone = /^01[0125][0-9]{8}$/;
-      const regxNationalId = /^[0-9]{14}$/;
-
-      if (!regxName.test(values.userName)) {
-        errors.userName = "برجاء إدخال اسم صحيح";
-      }
-
-      if (!regxPhone.test(values.phone)) {
-        errors.phone = "رقم الهاتف غير صحيح";
-      }
-
-      if (!values.address.trim()) {
-        errors.address = "برجاء إدخال العنوان";
-      }
-
-      if (!regxNationalId.test(values.nationalId)) {
-        errors.nationalId = "الرقم القومي يجب أن يكون 14 رقم";
-      }
-
-      if (!values.caseType) {
-        errors.caseType = "برجاء اختيار نوع الحالة";
-      }
-
-      if (!values.supportType) {
-        errors.supportType = "برجاء اختيار نوع المساعدة";
-      }
-
+      if (!isValidName(values.userName)) errors.userName = MSG.name;
+      if (!isValidPhone(values.phone)) errors.phone = MSG.phone;
+      if (!String(values.address || "").trim()) errors.address = MSG.required;
+      if (!isValidNationalId(values.nationalId)) errors.nationalId = MSG.nationalId;
+      if (!values.caseType) errors.caseType = MSG.required;
+      if (!values.supportType) errors.supportType = MSG.required;
       return errors;
     },
+    onSubmit: saveCase,
   });
 
+  const stepFields = [
+    ["userName", "phone", "address", "nationalId"],
+    ["caseType", "supportType"],
+  ];
+
+  const goNext = async () => {
+    const fields = stepFields[step];
+    const errors = await formik.validateForm();
+    fields.forEach((name) => formik.setFieldTouched(name, true));
+    if (fields.some((name) => errors[name])) return;
+    setStep((s) => s + 1);
+  };
+
+  const cancel = () => {
+    const dirty = Object.values(formik.values).some((v) => String(v).trim());
+    if (dirty) {
+      setCancelOpen(true);
+      return;
+    }
+    navigate("/user-home");
+  };
+
   return (
-    <div
-      dir="rtl"
-      className="min-h-screen bg-gray-100 py-10 px-4 mt-7"
-    >
-      <div className="mx-auto w-full max-w-4xl">
-
-        {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
-            تقديم طلب مساعدة
-          </h1>
-
-          <p className="mt-2 text-sm md:text-base text-gray-500">
-            قم بإدخال بياناتك وبيانات طلب المساعدة بشكل صحيح.
-          </p>
-        </div>
-
-        {/* Form Card */}
-        <div className="rounded-2xl bg-white shadow-sm border border-gray-100 p-6 md:p-8">
-
-          <form
-            onSubmit={formik.handleSubmit}
-            className="space-y-8"
-          >
-
-            {/* البيانات الشخصية */}
-            <section>
-              <div className="mb-5">
-                <h2 className="text-lg font-semibold text-gray-800">
-                  البيانات الأساسية
-                </h2>
-
-                <div className="mt-2 h-1 w-12 rounded-full bg-blue-600"></div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-
-                {/* الاسم */}
-                <div>
-                  <input
-                    type="text"
-                    name="userName"
-                    value={formik.values.userName}
-                    onChange={formik.handleChange}
-                    onBlur={formik.handleBlur}
-                    placeholder="أدخل اسم الحالة"
-                    className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-gray-800 placeholder:text-gray-400 outline-none transition focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
-                  />
-
-                  {formik.touched.userName && formik.errors.userName && (
-                    <p className="mt-1 text-sm text-red-500">
-                      {formik.errors.userName}
-                    </p>
-                  )}
-                </div>
-
-                {/* الهاتف */}
-                <div>
-                  <input
-                    type="tel"
-                    name="phone"
-                    value={formik.values.phone}
-                    onChange={formik.handleChange}
-                    onBlur={formik.handleBlur}
-                    placeholder="أدخل رقم الهاتف"
-                    className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-gray-800 placeholder:text-gray-400 outline-none transition focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
-                  />
-
-                  {formik.touched.phone && formik.errors.phone && (
-                    <p className="mt-1 text-sm text-red-500">
-                      {formik.errors.phone}
-                    </p>
-                  )}
-                </div>
-
-                {/* العنوان */}
-                <div>
-                  <input
-                    type="text"
-                    name="address"
-                    value={formik.values.address}
-                    onChange={formik.handleChange}
-                    onBlur={formik.handleBlur}
-                    placeholder="أدخل العنوان"
-                    className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-gray-800 placeholder:text-gray-400 outline-none transition focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
-                  />
-
-                  {formik.touched.address && formik.errors.address && (
-                    <p className="mt-1 text-sm text-red-500">
-                      {formik.errors.address}
-                    </p>
-                  )}
-                </div>
-
-                {/* الرقم القومي */}
-                <div>
-                  <input
-                    type="text"
-                    name="nationalId"
-                    value={formik.values.nationalId}
-                    onChange={formik.handleChange}
-                    onBlur={formik.handleBlur}
-                    placeholder="أدخل الرقم القومي"
-                    className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-gray-800 placeholder:text-gray-400 outline-none transition focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
-                  />
-
-                  {formik.touched.nationalId &&
-                    formik.errors.nationalId && (
-                      <p className="mt-1 text-sm text-red-500">
-                        {formik.errors.nationalId}
-                      </p>
-                    )}
-                </div>
-
-              </div>
-            </section>
-
-            {/* تفاصيل الطلب */}
-            <section>
-
-              <div className="mb-5">
-                <h2 className="text-lg font-semibold text-gray-800">
-                  تفاصيل طلب المساعدة
-                </h2>
-
-                <div className="mt-2 h-1 w-12 rounded-full bg-blue-600"></div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-
-                {/* نوع الحالة */}
-                <div>
-                  <select
-                    name="caseType"
-                    value={formik.values.caseType}
-                    onChange={formik.handleChange}
-                    onBlur={formik.handleBlur}
-                    className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-gray-700 outline-none transition focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
-                  >
-                    <option value="">
-                      اختر نوع الحالة
-                    </option>
-
-                    <option>أرملة</option>
-                    <option>مطلقة</option>
-                    <option>يتيم</option>
-                    <option>ذوي احتياجات خاصة</option>
-                    <option>أسرة محدودة الدخل</option>
-                  </select>
-
-                  {formik.touched.caseType &&
-                    formik.errors.caseType && (
-                      <p className="mt-1 text-sm text-red-500">
-                        {formik.errors.caseType}
-                      </p>
-                    )}
-                </div>
-
-                {/* نوع المساعدة */}
-                <div>
-                  <select
-                    name="supportType"
-                    value={formik.values.supportType}
-                    onChange={formik.handleChange}
-                    onBlur={formik.handleBlur}
-                    className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-gray-700 outline-none transition focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
-                  >
-                    <option value="">
-                      اختر نوع المساعدة
-                    </option>
-
-                    <option>مساعدة مالية</option>
-                    <option>مواد غذائية</option>
-                    <option>علاج</option>
-                    <option>مصروفات تعليم</option>
-                    <option>تجهيز عرائس</option>
-                  </select>
-
-                  {formik.touched.supportType &&
-                    formik.errors.supportType && (
-                      <p className="mt-1 text-sm text-red-500">
-                        {formik.errors.supportType}
-                      </p>
-                    )}
-                </div>
-
-              </div>
-
-              {/* الملاحظات */}
-              <div className="mt-5">
-
-                <textarea
-                  rows="5"
-                  name="notes"
-                  value={formik.values.notes}
-                  onChange={formik.handleChange}
-                  onBlur={formik.handleBlur}
-                  placeholder="اكتب أي تفاصيل أو ملاحظات إضافية..."
-                  className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-gray-800 placeholder:text-gray-400 outline-none resize-none transition focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
-                ></textarea>
-
-              </div>
-
-            </section>
-
-            {/* Buttons */}
-            <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 border-t border-gray-100 pt-6">
-
-              <button
-                type="button"
-                onClick={() => window.history.back()}
-                className="w-full sm:w-auto rounded-xl border border-gray-300 bg-white px-7 py-3 font-medium text-gray-700 transition hover:bg-gray-50"
-              >
-                إلغاء
-              </button>
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full sm:w-auto rounded-xl cursor-pointer bg-blue-600 px-7 py-3 font-medium text-white transition hover:bg-blue-700"
-              >
-                  {loading ? "جاري إرسال الطلب..." : "إرسال الطلب"}
-              </button>
-
-            </div>
-
-          </form>
-
-        </div>
+    <div className="mx-auto max-w-xl px-4 py-8">
+      <PageHeading>تقديم طلب مساعدة</PageHeading>
+      <p className="mt-2 mb-6 text-sm text-[#3F5349]">الخطوة {step + 1} من 3</p>
+      <div className="mb-6 flex gap-2">
+        {[0, 1, 2].map((i) => (
+          <span
+            key={i}
+            className={`h-1.5 flex-1 rounded-full ${i <= step ? "bg-[#1F5C45]" : "bg-[#D5DFD9]"}`}
+          />
+        ))}
       </div>
+
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (step === 2) setPhoneOpen(true);
+        }}
+        className="space-y-4 rounded-[14px] border border-[#D5DFD9] bg-white p-5"
+      >
+        {step === 0 && (
+          <>
+            <Field label="اسم الحالة" name="userName" value={formik.values.userName} onChange={formik.handleChange} onBlur={formik.handleBlur} error={formik.errors.userName} touched={formik.touched.userName} />
+            <Field label="رقم الموبايل" name="phone" type="tel" value={formik.values.phone} onChange={formik.handleChange} onBlur={formik.handleBlur} error={formik.errors.phone} touched={formik.touched.phone} />
+            <Field label="العنوان" name="address" value={formik.values.address} onChange={formik.handleChange} onBlur={formik.handleBlur} error={formik.errors.address} touched={formik.touched.address} />
+            <Field label="الرقم القومي" name="nationalId" value={formik.values.nationalId} onChange={formik.handleChange} onBlur={formik.handleBlur} error={formik.errors.nationalId} touched={formik.touched.nationalId} />
+          </>
+        )}
+
+        {step === 1 && (
+          <>
+            <Field label="تصنيف الحالة" name="caseType" type="select" value={formik.values.caseType} onChange={formik.handleChange} onBlur={formik.handleBlur} error={formik.errors.caseType} touched={formik.touched.caseType}>
+              <option value="">اختر التصنيف</option>
+              {CASE_TYPES.map((item) => (
+                <option key={item} value={item}>{item}</option>
+              ))}
+            </Field>
+            <Field label="نوع المساعدة" name="supportType" type="select" value={formik.values.supportType} onChange={formik.handleChange} onBlur={formik.handleBlur} error={formik.errors.supportType} touched={formik.touched.supportType}>
+              <option value="">اختر النوع</option>
+              {SUPPORT_TYPES.map((item) => (
+                <option key={item} value={item}>{item}</option>
+              ))}
+            </Field>
+            <Field label="ملاحظات" name="notes" type="textarea" value={formik.values.notes} onChange={formik.handleChange} onBlur={formik.handleBlur} />
+          </>
+        )}
+
+        {step === 2 && (
+          <dl className="space-y-3 text-sm">
+            {[
+              ["الاسم", formik.values.userName],
+              ["الموبايل", formik.values.phone],
+              ["العنوان", formik.values.address],
+              ["الرقم القومي", formik.values.nationalId],
+              ["التصنيف", formik.values.caseType],
+              ["نوع المساعدة", formik.values.supportType],
+              ["ملاحظات", formik.values.notes || "لا توجد"],
+            ].map(([label, value]) => (
+              <div key={label}>
+                <dt className="text-[#3F5349]">{label}</dt>
+                <dd className="font-medium text-[#1C211E]">{value}</dd>
+              </div>
+            ))}
+          </dl>
+        )}
+
+        <div className="flex flex-col-reverse gap-3 border-t border-[#D5DFD9] pt-4 sm:flex-row sm:justify-end">
+          <Button type="button" variant="secondary" onClick={step === 0 ? cancel : () => setStep((s) => s - 1)}>
+            {step === 0 ? "إلغاء" : "السابق"}
+          </Button>
+          {step < 2 ? (
+            <Button type="button" onClick={goNext}>التالي</Button>
+          ) : (
+            <Button type="submit">إرسال الطلب</Button>
+          )}
+        </div>
+      </form>
+      <PhoneConfirmDialog
+        open={phoneOpen}
+        onClose={() => setPhoneOpen(false)}
+        phone={formik.values.phone}
+        loading={sending}
+        onConfirm={async (phone) => {
+          setSending(true);
+          try {
+            formik.setFieldValue("phone", phone, false);
+            await saveCase({ ...formik.values, phone });
+            setPhoneOpen(false);
+          } finally {
+            setSending(false);
+          }
+        }}
+      />
+      <ConfirmDialog
+        open={cancelOpen}
+        onClose={() => setCancelOpen(false)}
+        onConfirm={() => navigate("/user-home")}
+        title="إلغاء الطلب"
+        body="هتلغي الطلب؟ البيانات اللي كتبتها مش هتتحفظ."
+        confirmLabel="إلغاء الطلب"
+        danger
+      />
     </div>
   );
 }

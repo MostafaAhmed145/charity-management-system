@@ -1,133 +1,129 @@
-import React, { useContext, useEffect } from "react";
+import { useContext, useEffect } from "react";
 import { useFormik } from "formik";
 import { updateProfile } from "firebase/auth";
-import { AuthContext } from "../CONTEXT/Context";
-import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
-import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
+import { toast } from "react-toastify";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "../../firebase";
+import { AuthContext } from "../CONTEXT/Context";
 import Loading from "../LOADING/Loading";
+import { Button } from "../UI/Button.jsx";
+import { Field } from "../UI/Field.jsx";
+import { PageHeading } from "../UI/PageHeading.jsx";
+import { isValidName, isValidPhone, MSG } from "../../lib/validation.js";
 
 export default function EditProfile() {
+  const { user, loading, userData, setUserData } = useContext(AuthContext);
+  const navigate = useNavigate();
 
-  const { user , loading , setPhoneNumper} =  useContext(AuthContext)
-  const navigate = useNavigate()
-
-
+  useEffect(() => {
+    document.title = "تعديل الملف — جمعية الهداية";
+  }, []);
 
   const formik = useFormik({
+    initialValues: {
+      name: userData?.name || user?.displayName || "",
+      email: user?.email || "",
+      phone: userData?.phone || "",
+    },
+    validate: (values) => {
+      const errors = {};
+      if (!isValidName(values.name)) errors.name = MSG.name;
+      if (!isValidPhone(values.phone)) errors.phone = MSG.phone;
+      return errors;
+    },
+    onSubmit: async (values) => {
+      try {
+        await updateProfile(user, {
+          displayName: values.name,
+        });
 
-  initialValues: {
-    name: user?.displayName || "",
-    email: user?.email || "",
-    phone: "",
-  },
+        await setDoc(
+          doc(db, "users", user.uid),
+          {
+            name: values.name,
+            email: user.email,
+            phone: values.phone,
+          },
+          { merge: true }
+        );
 
-  onSubmit: async (values) => {
-    console.log("Submit Works");
-    try {
-      console.log("Submit Works");
-      console.log(user);
-      await updateProfile(user, {
-        displayName: values.name,
-      });
+        if (typeof setUserData === "function") {
+          setUserData({
+            ...(userData || {}),
+            name: values.name,
+            phone: values.phone,
+          });
+        }
 
-      console.log("updateProfile Done");
-        
-      console.log(values);
-      await setDoc(doc(db , "users" , user.uid) ,{
-          name: values.name,
-          email: user.email,
-          phone: values.phone,
-      } , {
-        merge : true
-      })
+        toast.success("تم حفظ التعديلات");
+        navigate("/profile");
+      } catch {
+        toast.error(MSG.network);
+      }
+    },
+  });
 
+  useEffect(() => {
+    const getUserData = async () => {
+      if (!user) return;
 
-      toast.success("Profile Updated Successfully");
+      const docSnap = await getDoc(doc(db, "users", user.uid));
 
-      navigate("/profile");
-    } catch (error) {
-        
-        toast.error(error.message);
-    }
-  },
-});
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        formik.setValues({
+          name: data.name || "",
+          email: data.email || user.email || "",
+          phone: data.phone || "",
+        });
+      }
+    };
 
+    getUserData();
+    // formik identity changes every render
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
-useEffect(() => {
-  const getUserData = async () => {
-    if (!user) return;
+  if (loading) {
+    return <Loading />;
+  }
 
-    const docSnap = await getDoc(doc(db, "users", user.uid));
-
-    if (docSnap.exists()) {
-      formik.setValues({
-        name: docSnap.data().name,
-        email: docSnap.data().email,
-        phone: docSnap.data().phone,
-      });
-    }
-  };
-
-  getUserData();
-}, [user]);
-
-
-
-if (loading) {
-  return <Loading/>
-}
-
- 
   return (
-    <div className="bg-gray-100 min-h-screen flex justify-center items-center">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8">
-
-        <h2 className="text-2xl font-bold text-center mb-6 italic">
-          Edit Profile
-        </h2>
-
-        <form onSubmit={formik.handleSubmit}  className="space-y-5">
-
-          <input
-            type="text"
+    <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-md flex-col justify-center px-4 py-10">
+      <div className="rounded-[14px] border border-[#D5DFD9] bg-white p-6">
+        <PageHeading className="mb-6 text-center">تعديل الملف</PageHeading>
+        <form onSubmit={formik.handleSubmit} className="space-y-4">
+          <Field
+            label="الاسم"
             name="name"
-            placeholder="Full Name"
             value={formik.values.name}
             onChange={formik.handleChange}
             onBlur={formik.handleBlur}
-
-            className="w-full p-3 rounded-lg border border-gray-300 outline-none focus:border-blue-500"
+            error={formik.errors.name}
+            touched={formik.touched.name}
           />
-
-          <input
-            type="email"
+          <Field
+            label="البريد"
             name="email"
+            type="email"
             value={formik.values.email}
             disabled
-            className="w-full p-3 rounded-lg bg-gray-100 cursor-not-allowed"
           />
-
-          <input
-            type="text"
+          <Field
+            label="الموبايل"
             name="phone"
-            placeholder="Phone Number"
+            type="tel"
             value={formik.values.phone}
             onChange={formik.handleChange}
             onBlur={formik.handleBlur}
-            className="w-full p-3 rounded-lg border border-gray-300 outline-none focus:border-blue-500"
+            error={formik.errors.phone}
+            touched={formik.touched.phone}
           />
-
-          <button
-            type="submit"
-            className="w-full cursor-pointer bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition"
-          >
-            Save Changes
-          </button>
-
+          <Button type="submit" className="w-full" loading={formik.isSubmitting}>
+            حفظ التعديلات
+          </Button>
         </form>
-
       </div>
     </div>
   );

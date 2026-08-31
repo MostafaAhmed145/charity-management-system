@@ -1,2 +1,59 @@
 
 @import "tailwindcss";
+
+@theme {
+  --color-hidaya-body: #F4F4F2;
+  --color-hidaya-surface: #FFFFFF;
+  --color-hidaya-ink: #1C211E;
+  --color-hidaya-muted: #3F5349;
+  --color-hidaya-accent: #1F5C45;
+  --color-hidaya-accent-dark: #143D2E;
+  --color-hidaya-tint: #E6EEE9;
+  --color-hidaya-line: #D5DFD9;
+  --color-hidaya-pending-bg: #F3E6B8;
+  --color-hidaya-pending-ink: #6B5420;
+  --color-hidaya-danger-ink: #8B3A2F;
+}
+
+:root {
+  --hidaya-body: #F4F4F2;
+  --hidaya-surface: #FFFFFF;
+  --hidaya-ink: #1C211E;
+  --hidaya-muted: #3F5349;
+  --hidaya-accent: #1F5C45;
+  --hidaya-accent-dark: #143D2E;
+  --hidaya-tint: #E6EEE9;
+  --hidaya-line: #D5DFD9;
+  --hidaya-pending-bg: #F3E6B8;
+  --hidaya-pending-ink: #6B5420;
+  --hidaya-danger-ink: #8B3A2F;
+  --hidaya-radius-btn: 12px;
+  --hidaya-radius-card: 14px;
+  --hidaya-bar-height: 64px;
+  --hidaya-sidebar: 16rem;
+  --hidaya-drawer: 22.5rem;
+}
+
+body {
+  background: var(--hidaya-body);
+  color: var(--hidaya-ink);
+  font-family: "IBM Plex Sans Arabic", sans-serif;
+}
+
+.font-heading,
+.font-wordmark {
+  font-family: "Cairo", "IBM Plex Sans Arabic", sans-serif;
+}
+
+*:focus-visible {
+  outline: 3px solid var(--hidaya-tint);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 1px var(--hidaya-accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}

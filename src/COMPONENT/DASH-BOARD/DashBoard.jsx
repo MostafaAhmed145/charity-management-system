@@ -1,15 +1,20 @@
-import React from "react";
-import SideBar from "../SIDE-BAR/SideBar";
 import { Outlet } from "react-router-dom";
+import SideBar from "../SIDE-BAR/SideBar";
+import { useDashboardNav } from "./dashboardNavContext.jsx";
 
 export default function DashBoard() {
-  return (
-    <>
-      <SideBar />
+  const { open } = useDashboardNav();
 
-      <main className="p-4 md:p-6 md:mr-64 mt-16">
+  return (
+    <div className="min-h-[calc(100vh-4rem)]">
+      <SideBar />
+      <main
+        className={`p-4 transition-[margin] duration-200 ease-out md:p-6 ${
+          open ? "md:mr-(--hidaya-sidebar)" : ""
+        }`}
+      >
         <Outlet />
       </main>
-    </>
+    </div>
   );
 }

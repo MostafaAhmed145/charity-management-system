@@ -1,118 +1,97 @@
-
-import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import React, { createContext, useState, useEffect } from 'react'
+import { getAuth, onAuthStateChanged } from "firebase/auth";
+import React, { createContext, useCallback, useEffect, useState } from "react";
 import app, { db } from "../../firebase";
 import { doc, getDoc } from "firebase/firestore";
-import {
-  Clock3,
-  HeartHandshake,
-  XCircle,
-  CheckCircle2,
-  LoaderCircle,
-} from "lucide-react";
+import { getStatus as getStatusFromLib } from "../../lib/status.js";
+import { ensureUserProfile } from "../../lib/ensureUserProfile.js";
+import { resolveRole } from "../../lib/resolveRole.js";
 
-export let AuthContext = createContext()
+export let AuthContext = createContext();
 
-export default function AuthProvider({children}) {
-  
-  const auth = getAuth(app)
-  
+export default function AuthProvider({ children }) {
+  const auth = getAuth(app);
+
   const [userData, setUserData] = useState(null);
-    const [user, setUser] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [ role, setRole] = useState("");
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [role, setRole] = useState("");
 
+  const applySession = useCallback(async (currentUser, forceRefresh = false) => {
+    let claimRole = "";
+    try {
+      const token = await currentUser.getIdTokenResult(forceRefresh);
+      claimRole = typeof token.claims.role === "string" ? token.claims.role : "";
+    } catch {
+      claimRole = "";
+    }
 
+    let docRole = "";
+    let data = null;
+    try {
+      const docSnap = await getDoc(doc(db, "users", currentUser.uid));
+      if (docSnap.exists()) {
+        data = docSnap.data();
+        docRole = data.role || "";
+      }
+    } catch {
+      data = null;
+    }
 
-    useEffect(()=>{
+    setRole(resolveRole(docRole, claimRole));
+    setUserData(data);
+    return Boolean(data);
+  }, []);
 
-        const unsubscribe = onAuthStateChanged( auth , async (currentUser)=>{
+  const refreshSession = useCallback(async () => {
+    const current = auth.currentUser;
+    if (!current) return;
+    const hasProfile = await applySession(current, true);
+    if (!hasProfile) {
+      await ensureUserProfile(current);
+      await applySession(current, true);
+    }
+  }, [applySession, auth]);
 
-             if (currentUser) {
-                  setUser(currentUser)
-                   const docRef = doc(db, "users", currentUser.uid);
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      try {
+        if (currentUser) {
+          setUser(currentUser);
+          const hasProfile = await applySession(currentUser, false);
+          if (!hasProfile) {
+            await ensureUserProfile(currentUser);
+            await applySession(currentUser, true);
+          }
+        } else {
+          setUser(null);
+          setRole("");
+          setUserData(null);
+        }
+      } finally {
+        setLoading(false);
+      }
+    });
 
-                    const docSnap = await getDoc(docRef);
+    return unsubscribe;
+  }, [applySession, auth]);
 
-                    console.log("doc exists:", docSnap.data().role);
+  const getStatus = (status) => getStatusFromLib(status);
 
-                    
-
-                    if (docSnap.exists()) {
-                      setRole(docSnap.data().role);
-                      setUserData(docSnap.data());
-                    }
-
-              }   else{
-                 setUser(null);
-                  setRole("");
-              }
-
-              setLoading(false)
-        })
-
-        return unsubscribe
-
-    } , [])
-
-    const getStatus = (status) => {
-  switch (status) {
-    case "pending":
-      return {
-        text: "قيد المراجعة",
-        className: "bg-yellow-50 text-yellow-700",
-        icon: Clock3,
-      };
-
-    case "approved":
-      return {
-        text: "تمت الموافقة",
-        className: "bg-green-50 text-green-700",
-        icon: HeartHandshake,
-      };
-
-    case "rejected":
-      return {
-        text: "مرفوض",
-        className: "bg-red-100 text-red-700",
-        icon: XCircle,
-      };
-
-    case "in_progress":
-      return {
-        text: "جار التنفيذ",
-        className: "bg-gray-100 text-gray-700 ",
-        icon: LoaderCircle,
-      };
-
-    case "completed":
-      return {
-        text: "مكتمل",
-        className: "bg-blue-50 text-blue-700",
-        icon: CheckCircle2,
-      };
-
-    default:
-      return {
-        text: "غير معروف",
-        className: "bg-gray-50 text-gray-600",
-        icon: Clock3,
-      };
-  }
-};
-
-  return <AuthContext.Provider value={{ 
-    user,
-    setUser,
-    loading,
-    setLoading,
-    role,
-    setRole,
-    userData, 
-    setUserData , 
-    getStatus
-   } }>
-     {children}
-  </AuthContext.Provider>
-  
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        setUser,
+        loading,
+        setLoading,
+        role,
+        userData,
+        setUserData,
+        getStatus,
+        refreshSession,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
 }
