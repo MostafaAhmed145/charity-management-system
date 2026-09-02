@@ -69,7 +69,7 @@ export default function Login() {
   }
 
   return (
-    <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-md flex-col justify-center px-4 py-10">
+    <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-md flex-col justify-center px-4 pb-10 pt-20">
       <div className="rounded-[14px] border border-[#D5DFD9] bg-white p-6">
         <div className="mb-6 flex justify-center">
           <LogoLockup
@@ -122,10 +122,23 @@ export default function Login() {
         </form>
 
         <p className="mt-6 text-center text-sm text-[#3F5349]">
-          ما عندكش حساب؟{" "}
-          <Link to="/register" className="text-[#1F5C45]">
-            إنشاء حساب
-          </Link>
+          ليس لديك حساب ؟ {" "}
+          <Link to="/register" className="
+            inline-flex items-center justify-center
+            rounded-lg
+            bg-[#08945e]
+            px-5 py-2.5
+            text-sm font-semibold text-white
+          
+            transition-all duration-300
+            hover:bg-[#0aa968]
+                hover:-translate-y-0.5
+              "
+            >
+              انشئ حساب 
+            </Link>
+
+          
         </p>
       </div>
     </div>

@@ -32,7 +32,7 @@ export default function SubmitCase() {
 
   const saveCase = useCallback(async (values) => {
     if (!user) {
-      toast.error("سجّل دخولك الأول");
+      toast.error("سجّل دخولك اولا");
       return;
     }
     try {
@@ -97,7 +97,7 @@ export default function SubmitCase() {
   };
 
   return (
-    <div className="mx-auto max-w-xl px-4 py-8">
+    <div className="mx-auto max-w-xl px-4 pb-8 pt-20">
       <PageHeading>تقديم طلب مساعدة</PageHeading>
       <p className="mt-2 mb-6 text-sm text-[#3F5349]">الخطوة {step + 1} من 3</p>
       <div className="mb-6 flex gap-2">
@@ -194,8 +194,7 @@ export default function SubmitCase() {
         onClose={() => setCancelOpen(false)}
         onConfirm={() => navigate("/user-home")}
         title="إلغاء الطلب"
-        body="هتلغي الطلب؟ البيانات اللي كتبتها مش هتتحفظ."
-        confirmLabel="إلغاء الطلب"
+        body="هل أنت متأكد من إلغاء الطلب؟ سيتم فقدان جميع البيانات التي لم يتم حفظها."        confirmLabel="إلغاء الطلب"
         danger
       />
     </div>

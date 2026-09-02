@@ -24,21 +24,19 @@ export default function SideBar() {
       {open ? (
         <button
           type="button"
-          className="fixed inset-0 top-16 z-35 bg-hidaya-ink/40 md:hidden"
+          className="fixed inset-0 top-16 z-40 bg-hidaya-ink/40 md:hidden"
           aria-label="إغلاق القائمة"
           onClick={() => setOpen(false)}
         />
       ) : null}
 
-      <aside
-        id="dashboard-sidebar"
-        aria-label="قائمة لوحة التحكم"
-        aria-hidden={!open}
-        inert={!open ? true : undefined}
-        className={`fixed top-16 right-0 z-40 flex h-[calc(100vh-4rem)] w-(--hidaya-sidebar) flex-col border-l border-hidaya-accent bg-hidaya-accent-dark text-hidaya-body transition-transform duration-200 ease-out ${
-          open ? "translate-x-0" : "pointer-events-none translate-x-full"
-        }`}
-      >
+     <aside
+      id="dashboard-sidebar"
+      aria-label="قائمة لوحة التحكم"
+      className={`fixed top-16 right-0 z-40 flex h-[calc(100vh-4rem)] w-(--hidaya-sidebar) flex-col border-l border-hidaya-accent bg-hidaya-accent-dark text-hidaya-body transition-transform duration-200 ease-out lg:translate-x-0 lg:pointer-events-auto ${
+        open ? "translate-x-0" : "pointer-events-none translate-x-full"
+      }`}
+    >
         <p className="border-b border-hidaya-accent px-5 py-4 text-sm font-medium text-hidaya-body/80">
           غرفة الإدارة
         </p>

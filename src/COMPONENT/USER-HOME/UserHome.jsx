@@ -15,8 +15,8 @@ export default function UserHome() {
   }, []);
 
   return (
-    <section className="mx-auto max-w-xl px-4 py-8">
-      <p className="text-sm text-[#3F5349]">
+    <section className="mx-auto max-w-xl px-4 pb-8 pt-12">
+      <p className="text-sm text-[#3F5349] mt-8">
         {first ? `السلام عليكم يا ${first}` : "السلام عليكم"}
       </p>
       <PageHeading className="mt-2 mb-8">إزاي نقدر نساعدك؟</PageHeading>

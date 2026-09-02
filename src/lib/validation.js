@@ -6,16 +6,25 @@ export const NATIONAL_ID_REGEX = /^[0-9]{14}$/;
 export const PASSWORD_HINT = "كلمة السر 8 حروف أو أرقام على الأقل";
 
 export const MSG = {
-  name: "برجاء إدخال اسم صحيح",
-  email: "البريد مش صح",
-  phone: "رقم الموبايل مش صح",
-  nationalId: "الرقم القومي لازم 14 رقم",
+  name: "يرجى إدخال اسم صحيح",
+
+  email: "يرجى إدخال بريد إلكتروني صحيح",
+
+  phone: "يرجى إدخال رقم هاتف صحيح",
+
+  nationalId: "يجب أن يتكون الرقم القومي من 14 رقمًا",
+
   password: PASSWORD_HINT,
-  passwordMatch: "كلمتا السر مش زي بعض",
-  required: "الحقل مطلوب",
-  loginFailed: "البريد أو كلمة السر مش صح",
-  network: "تعذر الحفظ، حاول مرة تانية",
+
+  passwordMatch: "كلمتا المرور غير متطابقتين",
+
+  required: "هذا الحقل مطلوب",
+
+  loginFailed: "البريد الإلكتروني أو كلمة المرور غير صحيحة",
+
+  network: "تعذر حفظ البيانات، يرجى المحاولة مرة أخرى",
 };
+
 
 export function isValidName(value) {
   return NAME_REGEX.test(String(value ?? "").trim());

@@ -63,7 +63,10 @@ export default function MyCases() {
 
       {!loading && cases.length === 0 && (
         <div className="rounded-[14px] border border-[#D5DFD9] bg-white p-8 text-center">
-          <p className="mb-4 text-[#3F5349]">ما عندكش طلبات لسه</p>
+          <p className="mb-4 text-center text-sm font-medium text-[#3F5349] drop-shadow-[0_0_8px_rgba(8,148,94,0.18)]">
+            لا توجد لديك طلبات حتى الآن 
+          </p>
+
           <Button onClick={() => navigate(PATHS.submitCase)}>تقديم طلب</Button>
         </div>
       )}

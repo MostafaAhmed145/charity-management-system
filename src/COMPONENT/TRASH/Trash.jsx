@@ -58,14 +58,14 @@ export default function Trash() {
 
   return (
     <>
-      <header className="border-b border-[#D5DFD9] pb-4">
+      <header className="border-b border-[#D5DFD9] pb-4 pt-7 mt-10">
         <PageHeading>الأرشيف</PageHeading>
       </header>
 
       {loading && (
         <div className="mt-6 space-y-2">
           {[0, 1, 2].map((i) => (
-            <div key={i} className="h-12 animate-pulse rounded-lg bg-[#E6EEE9]" />
+            <div key={i} className="h-12 animate-pulse rounded-lg bg-[#E6EEE9]"/>
           ))}
         </div>
       )}

@@ -8,13 +8,12 @@ export default function DashBoard() {
   return (
     <div className="min-h-[calc(100vh-4rem)]">
       <SideBar />
+
       <main
-        className={`p-4 transition-[margin] duration-200 ease-out md:p-6 ${
-          open ? "md:mr-(--hidaya-sidebar)" : ""
-        }`}
+        className={`min-h-[calc(100vh-4rem)] min-w-0 p-4 transition-all duration-200 ease-out md:p-6 py-20 lg:mr-(--hidaya-sidebar)`}
       >
-        <Outlet />
-      </main>
+      <Outlet />
+    </main>
     </div>
   );
 }
