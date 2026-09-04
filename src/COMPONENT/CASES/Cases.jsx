@@ -22,15 +22,39 @@ export default function Cases() {
   const [selectedCase, setSelectedCase] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // ================= RESPONSIVE =================
+
+  const [isMobile, setIsMobile] = useState(
+    () => window.innerWidth < 640
+  );
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 640);
+    };
+
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, []);
+
+  // ================= PAGE TITLE =================
+
   useEffect(() => {
     document.title = "الحالات — جمعية الهداية";
   }, []);
+
+  // ================= GET CASES =================
 
   const getCases = async () => {
     try {
       setLoading(true);
 
-      const querySnapshot = await getDocs(collection(db, "cases"));
+      const querySnapshot = await getDocs(
+        collection(db, "cases")
+      );
 
       const data = querySnapshot.docs
         .map((docSnap) => ({
@@ -51,6 +75,8 @@ export default function Cases() {
     getCases();
   }, []);
 
+  // ================= ESC CLOSE =================
+
   useEffect(() => {
     if (!expandedId) return;
 
@@ -67,8 +93,13 @@ export default function Cases() {
     };
   }, [expandedId]);
 
+  // ================= SELECTED CASE =================
+
   const selected =
-    cases.find((item) => item.id === expandedId) || selectedCase;
+    cases.find((item) => item.id === expandedId) ||
+    selectedCase;
+
+  // ================= TOGGLE ROW =================
 
   const toggleRow = (item) => {
     setSelectedCase(item);
@@ -77,6 +108,8 @@ export default function Cases() {
       current === item.id ? null : item.id
     );
   };
+
+  // ================= CHANGE STATUS =================
 
   const handleStatusChange = async (status) => {
     if (!selected?.id) return;
@@ -105,6 +138,8 @@ export default function Cases() {
     }
   };
 
+  // ================= ARCHIVE =================
+
   const handleArchive = async () => {
     if (!selected?.id) return;
 
@@ -127,6 +162,8 @@ export default function Cases() {
     }
   };
 
+  // ================= FILTER =================
+
   const filteredCases = cases.filter((item) => {
     const searchTerm = search.toLowerCase();
 
@@ -144,53 +181,52 @@ export default function Cases() {
   });
 
   return (
-    <>
+    <div className="w-full min-w-0 max-w-full">
       {/* ================= HEADER ================= */}
 
       <header className="mb-6 mt-14">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
 
           {/* Title */}
+
           <div>
             <div className="flex flex-wrap items-center gap-3">
               <PageHeading>الحالات</PageHeading>
 
               {!loading && (
-
                 <span className="rounded-full border border-hidaya-line bg-hidaya-tint px-3 py-1 text-xs font-semibold text-hidaya-ink">
                   {filteredCases.length} حالة
                 </span>
-
               )}
             </div>
 
-              <p className="mt-2 text-sm text-hidaya-muted">
-                إدارة ومتابعة جميع الحالات المسجلة داخل الجمعية
-              </p>
-
+            <p className="mt-2 text-sm text-hidaya-muted">
+              إدارة ومتابعة جميع الحالات المسجلة داخل الجمعية
+            </p>
           </div>
 
-          {/* Add Case Button */}
+          {/* Add Case */}
+
           <Button
             onClick={() => {
               setSelectedCase(null);
               setExpandedId(null);
               setOpen(true);
             }}
-            className="shadow-sm cursor-pointer"
+            className="cursor-pointer shadow-sm"
           >
             إضافة حالة
           </Button>
         </div>
 
-        {/* Search & Filter Card */}
+        {/* ================= SEARCH & FILTER ================= */}
 
         <div className="mt-6 rounded-2xl border border-hidaya-line bg-white p-4 shadow-sm">
           <div className="flex flex-col gap-3 md:flex-row">
 
             {/* Search */}
 
-            <div className="relative flex-1">
+            <div className="relative min-w-0 flex-1">
               <Search
                 size={19}
                 className="absolute right-4 top-1/2 -translate-y-1/2 text-hidaya-muted"
@@ -199,7 +235,9 @@ export default function Cases() {
               <input
                 type="search"
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) =>
+                  setSearch(e.target.value)
+                }
                 placeholder="ابحث بالاسم أو الهاتف أو الرقم القومي..."
                 className="w-full rounded-xl border border-hidaya-line bg-white py-3 pl-4 pr-11 text-sm outline-none transition focus:border-hidaya-ink focus:ring-2 focus:ring-hidaya-tint"
               />
@@ -324,64 +362,64 @@ export default function Cases() {
       {/* ================= TABLE ================= */}
 
       {!loading && filteredCases.length > 0 && (
-        <div className="mt-6 overflow-hidden rounded-2xl border border-hidaya-line bg-white shadow-sm">
+        <div className="mt-6 w-full min-w-0 max-w-full overflow-hidden rounded-2xl border border-hidaya-line bg-white shadow-sm">
 
-          <div className="overflow-x-auto">
+          <div className="w-full min-w-0 max-w-full">
+            <table className="w-full text-right text-sm">
 
-            <table className="min-w-full text-right text-sm">
+              {/* ================= HEAD ================= */}
 
               <thead className="border-b border-hidaya-line bg-hidaya-tint text-hidaya-muted">
-
                 <tr>
-                  <th className="px-5 py-4 font-semibold">
+
+                  <th className="w-10 px-2 py-4 font-semibold sm:w-auto sm:px-5">
                     م
                   </th>
 
-                  <th className="px-5 py-4 font-semibold">
+                  <th className="px-3 py-4 font-semibold sm:px-5">
                     الاسم
                   </th>
 
-                  <th className="px-5 py-4 font-semibold">
+                  <th className="hidden px-3 py-4 font-semibold sm:px-5 md:table-cell">
                     الرقم القومي
                   </th>
 
-                  <th className="px-5 py-4 font-semibold">
+                  <th className="px-2 py-4 font-semibold sm:px-5">
                     الحالة
                   </th>
 
-                  <th className="px-5 py-4 font-semibold">
+                  <th className="hidden px-3 py-4 font-semibold sm:px-5 sm:table-cell">
                     التصنيف
                   </th>
 
-                  <th className="px-5 py-4 font-semibold">
+                  <th className="hidden px-3 py-4 font-semibold sm:px-5 lg:table-cell">
                     نوع المساعدة
                   </th>
 
-                  <th className="px-5 py-4 font-semibold">
+                  <th className="hidden px-3 py-4 font-semibold sm:px-5 md:table-cell">
                     الهاتف
                   </th>
 
-                  <th className="w-14 px-4 py-4">
+                  <th className="w-10 px-2 py-4 sm:w-14 sm:px-4">
                     <span className="sr-only">
                       تفاصيل
                     </span>
                   </th>
-                </tr>
 
+                </tr>
               </thead>
 
+              {/* ================= BODY ================= */}
+
               <tbody>
-
                 {filteredCases.map((item, index) => {
-
                   const expanded =
                     expandedId === item.id;
 
                   return (
-
                     <Fragment key={item.id}>
 
-                      {/* Main Row */}
+                      {/* ================= MAIN ROW ================= */}
 
                       <tr
                         className={`cursor-pointer border-b border-hidaya-tint transition-all duration-200 ${
@@ -393,41 +431,58 @@ export default function Cases() {
                         aria-expanded={expanded}
                       >
 
-                        <td className="px-5 py-4 text-hidaya-muted">
+                        {/* Number */}
+
+                        <td className="w-10 px-2 py-4 text-hidaya-muted sm:w-auto sm:px-5">
                           {index + 1}
                         </td>
 
-                        <td className="px-5 py-4 font-semibold text-hidaya-ink">
-                          {item.userName}
+                        {/* Name */}
+
+                        <td className="min-w-0 px-3 py-4 font-semibold text-hidaya-ink sm:px-5">
+                          <span className="block truncate">
+                            {item.userName}
+                          </span>
                         </td>
 
-                        <td className="px-5 py-4 whitespace-nowrap">
+                        {/* National ID */}
+
+                        <td className="hidden px-3 py-4 whitespace-nowrap sm:px-5 md:table-cell">
                           {item.nationalId}
                         </td>
 
-                        <td className="px-5 py-4">
+                        {/* Status */}
+
+                        <td className="px-2 py-4 sm:px-5">
                           <StatusBadge
                             status={item.status}
                           />
                         </td>
 
-                        <td className="px-5 py-4">
+                        {/* Category */}
+
+                        <td className="hidden px-3 py-4 sm:px-5 sm:table-cell">
                           {item.caseType}
                         </td>
 
-                        <td className="px-5 py-4">
+                        {/* Support */}
+
+                        <td className="hidden px-3 py-4 sm:px-5 lg:table-cell">
                           {item.supportType}
                         </td>
 
+                        {/* Phone */}
+
                         <td
                           dir="ltr"
-                          className="px-5 py-4 text-right"
+                          className="hidden px-3 py-4 text-right sm:px-5 md:table-cell"
                         >
                           {item.phone}
                         </td>
 
-                        <td className="px-4 py-4">
+                        {/* Arrow */}
 
+                        <td className="w-10 px-2 py-4 sm:w-14 sm:px-4">
                           <div
                             className={`flex h-8 w-8 items-center justify-center rounded-lg transition ${
                               expanded
@@ -435,7 +490,6 @@ export default function Cases() {
                                 : "hover:bg-hidaya-tint"
                             }`}
                           >
-
                             <ChevronDown
                               className={`h-5 w-5 text-hidaya-muted transition-transform duration-300 ${
                                 expanded
@@ -444,63 +498,55 @@ export default function Cases() {
                               }`}
                               aria-hidden="true"
                             />
-
                           </div>
-
                         </td>
 
                       </tr>
 
-                      {/* Expanded Details */}
+                      {/* ================= EXPANDED DETAILS ================= */}
 
                       {expanded && (
-
                         <tr className="bg-hidaya-tint/60">
 
                           <td
-                            colSpan={8}
-                            className="px-5 py-5"
+                            colSpan={isMobile ? 4 : 8}
+                            className="p-3 sm:p-5"
                           >
-
-                            <CaseDrawer
-                              selectedCase={
-                                item.status === selected?.status
-                                  ? selected
-                                  : item
-                              }
-                              onClose={() =>
-                                setExpandedId(null)
-                              }
-                              onEdit={() => {
-                                setSelectedCase(item);
-                                setExpandedId(null);
-                                setOpen(true);
-                              }}
-                              onArchive={() => {
-                                setSelectedCase(item);
-                                setConfirmOpen(true);
-                              }}
-                              onStatusChange={
-                                handleStatusChange
-                              }
-                            />
-
+                            <div className="w-full min-w-0">
+                              <CaseDrawer
+                                selectedCase={
+                                  item.status === selected?.status
+                                    ? selected
+                                    : item
+                                }
+                                onClose={() =>
+                                  setExpandedId(null)
+                                }
+                                onEdit={() => {
+                                  setSelectedCase(item);
+                                  setExpandedId(null);
+                                  setOpen(true);
+                                }}
+                                onArchive={() => {
+                                  setSelectedCase(item);
+                                  setConfirmOpen(true);
+                                }}
+                                onStatusChange={
+                                  handleStatusChange
+                                }
+                              />
+                            </div>
                           </td>
 
                         </tr>
-
                       )}
 
                     </Fragment>
-
                   );
-
                 })}
-
               </tbody>
 
             </table>
-
           </div>
         </div>
       )}
@@ -526,6 +572,6 @@ export default function Cases() {
         confirmLabel="نقل"
         danger
       />
-    </>
+    </div>
   );
 }

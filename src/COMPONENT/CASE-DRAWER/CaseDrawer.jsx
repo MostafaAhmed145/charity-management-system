@@ -55,14 +55,26 @@ export default function CaseDrawer({
         </div>
       ) : null}
 
-      <dl className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">
-        {rows.map(([label, value]) => (
-          <div key={label} className={label === "ملاحظات" ? "sm:col-span-2 lg:col-span-3" : ""}>
-            <dt className="text-[0.8125rem] text-hidaya-muted">{label}</dt>
-            <dd className="mt-0.5 font-medium text-hidaya-ink">{value || "—"}</dd>
-          </div>
-        ))}
-      </dl>
+      <dl className="grid min-w-0 grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2 lg:grid-cols-3">
+  {rows.map(([label, value]) => (
+    <div
+      key={label}
+      className={`min-w-0 ${
+        label === "ملاحظات"
+          ? "sm:col-span-2 lg:col-span-3"
+          : ""
+      }`}
+    >
+      <dt className="text-[0.8125rem] text-hidaya-muted">
+        {label}
+      </dt>
+
+      <dd className="mt-1 break-words font-medium text-hidaya-ink">
+        {value || "—"}
+      </dd>
+    </div>
+  ))}
+</dl>
 
       <div className="mt-5 flex flex-col gap-2 border-t border-hidaya-line pt-4 sm:flex-row">
         {mode === "active" ? (

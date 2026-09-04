@@ -68,11 +68,11 @@ function GuestAccountMenu() {
   const rootRef = useDismissible(open, setOpen);
 
   return (
-    <div ref={rootRef} className="relative">
+    <div ref={rootRef} className="relative ">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="inline-flex min-h-11 min-w-11 items-center justify-center text-hidaya-body"
+        className="inline-flex min-h-11 min-w-11 items-center justify-center text-hidaya-body cursor-pointer"
         aria-label="الحساب"
         aria-expanded={open}
         aria-haspopup="menu"
@@ -102,7 +102,7 @@ function GuestAccountMenu() {
             to={PATHS.login}
             role="menuitem"
             onClick={() => setOpen(false)}
-            className={menuItemClass}
+            className={menuItemClass + " cursor-pointer"}
           >
             تسجيل الدخول
           </Link>

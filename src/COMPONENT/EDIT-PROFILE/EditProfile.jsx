@@ -81,8 +81,7 @@ export default function EditProfile() {
     };
 
     getUserData();
-    // formik identity changes every render
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [user]);
 
   if (loading) {
@@ -90,7 +89,7 @@ export default function EditProfile() {
   }
 
   return (
-    <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-md flex-col justify-center px-4 py-10">
+    <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-md flex-col justify-center px-4 pb-10 pt-16">
       <div className="rounded-[14px] border border-[#D5DFD9] bg-white p-6">
         <PageHeading className="mb-6 text-center">تعديل الملف</PageHeading>
         <form onSubmit={formik.handleSubmit} className="space-y-4">

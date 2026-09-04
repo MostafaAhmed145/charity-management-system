@@ -294,6 +294,7 @@ export default function SuperAdmin() {
         body={
           roleUser
             ? `هل أنت متأكد من تغيير صلاحية ${
+              
                 roleUser.name ||
                 "هذا الحساب"
               } من ${roleLabel(

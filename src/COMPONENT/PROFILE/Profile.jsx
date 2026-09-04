@@ -27,7 +27,7 @@ export default function Profile() {
   const letter = name.trim().charAt(0) || "؟";
 
   return (
-    <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-md flex-col justify-center px-4 py-10">
+    <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-md flex-col justify-center px-4 pb-10 pt-16">
       <div className="rounded-[14px] border border-[#D5DFD9] bg-white p-8 text-center">
         <div className="mx-auto flex h-28 w-28 items-center justify-center overflow-hidden rounded-full border border-[#D5DFD9] bg-[#E6EEE9] text-3xl font-bold text-[#1F5C45]">
           {user.photoURL ? (
