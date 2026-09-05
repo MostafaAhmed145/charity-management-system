@@ -25,14 +25,19 @@ service cloud.firestore {
         && request.resource.data.uid == request.auth.uid
         && request.resource.data.role == "user";
 
-      allow update: if isSuperAdmin()
-        || (
+      allow update: if (
           isSignedIn()
           && userId == request.auth.uid
           && !request.resource.data.diff(resource.data).affectedKeys().hasAny(["role", "uid"])
+        )
+        || (
+          isSuperAdmin()
+          && resource.data.role != "superAdmin"
+          && request.resource.data.role in ["user", "admin"]
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["role"])
         );
 
-      allow delete: if isSuperAdmin();
+      allow delete: if isSuperAdmin() && resource.data.role != "superAdmin";
     }
 
     match /cases/{caseId} {

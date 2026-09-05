@@ -33,10 +33,55 @@ describe("privileged ops fail closed", () => {
     expect(updateDoc).not.toHaveBeenCalled();
   });
 
+  it("writes Firestore role when the callable is not deployed", async () => {
+    const missing = Object.assign(new Error("not-found"), {
+      code: "functions/not-found",
+    });
+    httpsCallableFn.mockRejectedValue(missing);
+    updateDoc.mockResolvedValue();
+
+    await expect(setUserRoleSecure("u1", "admin")).resolves.toEqual({
+      data: { ok: true },
+    });
+    expect(updateDoc).toHaveBeenCalledTimes(1);
+  });
+
+  it("writes Firestore role when the callable returns internal", async () => {
+    const internal = Object.assign(new Error("internal"), {
+      code: "functions/internal",
+    });
+    httpsCallableFn.mockRejectedValue(internal);
+    updateDoc.mockResolvedValue();
+
+    await expect(setUserRoleSecure("u1", "admin")).resolves.toEqual({
+      data: { ok: true },
+    });
+    expect(updateDoc).toHaveBeenCalledTimes(1);
+  });
+
+  it("writes Firestore role when the callable hangs", async () => {
+    httpsCallableFn.mockImplementation(() => new Promise(() => {}));
+    updateDoc.mockResolvedValue();
+
+    await expect(setUserRoleSecure("u1", "admin", { timeoutMs: 40 })).resolves.toEqual({
+      data: { ok: true },
+    });
+    expect(updateDoc).toHaveBeenCalledTimes(1);
+  });
+
   it("does not delete the Firestore profile when deleteUserAccount callable fails", async () => {
     httpsCallableFn.mockRejectedValue(new Error("functions unavailable"));
 
     await expect(deleteUserAccountSecure("u1")).rejects.toThrow();
+    expect(deleteDoc).not.toHaveBeenCalled();
+  });
+
+  it("does not delete the profile when the callable hangs", async () => {
+    httpsCallableFn.mockImplementation(() => new Promise(() => {}));
+
+    await expect(deleteUserAccountSecure("u1", { timeoutMs: 40 })).rejects.toMatchObject({
+      code: "functions/not-found",
+    });
     expect(deleteDoc).not.toHaveBeenCalled();
   });
 
