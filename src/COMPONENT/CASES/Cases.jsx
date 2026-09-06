@@ -52,9 +52,7 @@ export default function Cases() {
     try {
       setLoading(true);
 
-      const querySnapshot = await getDocs(
-        collection(db, "cases")
-      );
+      const querySnapshot = await getDocs(collection(db, "cases"));
 
       const data = querySnapshot.docs
         .map((docSnap) => ({
@@ -96,17 +94,14 @@ export default function Cases() {
   // ================= SELECTED CASE =================
 
   const selected =
-    cases.find((item) => item.id === expandedId) ||
-    selectedCase;
+    cases.find((item) => item.id === expandedId) || selectedCase;
 
   // ================= TOGGLE ROW =================
 
   const toggleRow = (item) => {
     setSelectedCase(item);
 
-    setExpandedId((current) =>
-      current === item.id ? null : item.id
-    );
+    setExpandedId((current) => (current === item.id ? null : item.id));
   };
 
   // ================= CHANGE STATUS =================
@@ -115,20 +110,13 @@ export default function Cases() {
     if (!selected?.id) return;
 
     try {
-      await updateDoc(
-        doc(db, "cases", selected.id),
-        { status }
-      );
+      await updateDoc(doc(db, "cases", selected.id), { status });
 
-      setSelectedCase((prev) =>
-        prev ? { ...prev, status } : prev
-      );
+      setSelectedCase((prev) => (prev ? { ...prev, status } : prev));
 
       setCases((prev) =>
         prev.map((item) =>
-          item.id === selected.id
-            ? { ...item, status }
-            : item
+          item.id === selected.id ? { ...item, status } : item
         )
       );
 
@@ -144,14 +132,9 @@ export default function Cases() {
     if (!selected?.id) return;
 
     try {
-      await updateDoc(
-        doc(db, "cases", selected.id),
-        { archived: true }
-      );
+      await updateDoc(doc(db, "cases", selected.id), { archived: true });
 
-      setCases((prev) =>
-        prev.filter((item) => item.id !== selected.id)
-      );
+      setCases((prev) => prev.filter((item) => item.id !== selected.id));
 
       setExpandedId(null);
       setSelectedCase(null);
@@ -173,9 +156,7 @@ export default function Cases() {
       item.phone?.includes(searchTerm);
 
     const matchesStatus =
-      sortStatus === "" ||
-      sortStatus === "all" ||
-      item.status === sortStatus;
+      sortStatus === "" || sortStatus === "all" || item.status === sortStatus;
 
     return matchesSearch && matchesStatus;
   });
@@ -186,9 +167,7 @@ export default function Cases() {
 
       <header className="mb-6 mt-14">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-
           {/* Title */}
-
           <div>
             <div className="flex flex-wrap items-center gap-3">
               <PageHeading>الحالات</PageHeading>
@@ -206,7 +185,6 @@ export default function Cases() {
           </div>
 
           {/* Add Case */}
-
           <Button
             onClick={() => {
               setSelectedCase(null);
@@ -223,7 +201,6 @@ export default function Cases() {
 
         <div className="mt-6 rounded-2xl border border-hidaya-line bg-white p-4 shadow-sm">
           <div className="flex flex-col gap-3 md:flex-row">
-
             {/* Search */}
 
             <div className="relative min-w-0 flex-1">
@@ -235,9 +212,7 @@ export default function Cases() {
               <input
                 type="search"
                 value={search}
-                onChange={(e) =>
-                  setSearch(e.target.value)
-                }
+                onChange={(e) => setSearch(e.target.value)}
                 placeholder="ابحث بالاسم أو الهاتف أو الرقم القومي..."
                 className="w-full rounded-xl border border-hidaya-line bg-white py-3 pl-4 pr-11 text-sm outline-none transition focus:border-hidaya-ink focus:ring-2 focus:ring-hidaya-tint"
               />
@@ -253,34 +228,15 @@ export default function Cases() {
 
               <select
                 value={sortStatus}
-                onChange={(e) =>
-                  setSortStatus(e.target.value)
-                }
+                onChange={(e) => setSortStatus(e.target.value)}
                 className="w-full appearance-none rounded-xl border border-hidaya-line bg-white py-3 pl-10 pr-10 text-sm outline-none transition focus:border-hidaya-ink focus:ring-2 focus:ring-hidaya-tint md:w-56"
               >
-                <option value="">
-                  فرز حسب الحالة
-                </option>
-
-                <option value="all">
-                  كل الحالات
-                </option>
-
-                <option value="pending">
-                  قيد المراجعة
-                </option>
-
-                <option value="in_progress">
-                  جاري التنفيذ
-                </option>
-
-                <option value="completed">
-                  مكتملة
-                </option>
-
-                <option value="rejected">
-                  مرفوضة
-                </option>
+                <option value="">فرز حسب الحالة</option>
+                <option value="all">كل الحالات</option>
+                <option value="pending">قيد المراجعة</option>
+                <option value="in_progress">جاري التنفيذ</option>
+                <option value="completed">مكتملة</option>
+                <option value="rejected">مرفوضة</option>
               </select>
 
               <ChevronDown
@@ -323,12 +279,8 @@ export default function Cases() {
 
       {!loading && filteredCases.length === 0 && (
         <div className="mt-6 rounded-2xl border border-hidaya-line bg-white p-10 text-center shadow-sm">
-
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-hidaya-tint">
-            <Search
-              size={22}
-              className="text-hidaya-muted"
-            />
+            <Search size={22} className="text-hidaya-muted" />
           </div>
 
           <p className="text-base font-medium text-hidaya-ink">
@@ -363,30 +315,23 @@ export default function Cases() {
 
       {!loading && filteredCases.length > 0 && (
         <div className="mt-6 w-full min-w-0 max-w-full overflow-hidden rounded-2xl border border-hidaya-line bg-white shadow-sm">
-
-          <div className="w-full min-w-0 max-w-full">
+          <div className="w-full min-w-0 max-w-full overflow-x-auto">
             <table className="w-full text-right text-sm">
-
               {/* ================= HEAD ================= */}
 
               <thead className="border-b border-hidaya-line bg-hidaya-tint text-hidaya-muted">
                 <tr>
-
                   <th className="w-10 px-2 py-4 font-semibold sm:w-auto sm:px-5">
                     م
                   </th>
 
-                  <th className="px-3 py-4 font-semibold sm:px-5">
-                    الاسم
-                  </th>
+                  <th className="px-3 py-4 font-semibold sm:px-5">الاسم</th>
 
                   <th className="hidden px-3 py-4 font-semibold sm:px-5 md:table-cell">
                     الرقم القومي
                   </th>
 
-                  <th className="px-2 py-4 font-semibold sm:px-5">
-                    الحالة
-                  </th>
+                  <th className="px-2 py-4 font-semibold sm:px-5">الحالة</th>
 
                   <th className="hidden px-3 py-4 font-semibold sm:px-5 sm:table-cell">
                     التصنيف
@@ -401,11 +346,8 @@ export default function Cases() {
                   </th>
 
                   <th className="w-10 px-2 py-4 sm:w-14 sm:px-4">
-                    <span className="sr-only">
-                      تفاصيل
-                    </span>
+                    <span className="sr-only">تفاصيل</span>
                   </th>
-
                 </tr>
               </thead>
 
@@ -413,24 +355,19 @@ export default function Cases() {
 
               <tbody>
                 {filteredCases.map((item, index) => {
-                  const expanded =
-                    expandedId === item.id;
+                  const expanded = expandedId === item.id;
 
                   return (
                     <Fragment key={item.id}>
-
                       {/* ================= MAIN ROW ================= */}
 
                       <tr
                         className={`cursor-pointer border-b border-hidaya-tint transition-all duration-200 ${
-                          expanded
-                            ? "bg-hidaya-tint"
-                            : "hover:bg-hidaya-body"
+                          expanded ? "bg-hidaya-tint" : "hover:bg-hidaya-body"
                         }`}
                         onClick={() => toggleRow(item)}
                         aria-expanded={expanded}
                       >
-
                         {/* Number */}
 
                         <td className="w-10 px-2 py-4 text-hidaya-muted sm:w-auto sm:px-5">
@@ -454,9 +391,7 @@ export default function Cases() {
                         {/* Status */}
 
                         <td className="px-2 py-4 sm:px-5">
-                          <StatusBadge
-                            status={item.status}
-                          />
+                          <StatusBadge status={item.status} />
                         </td>
 
                         {/* Category */}
@@ -492,22 +427,18 @@ export default function Cases() {
                           >
                             <ChevronDown
                               className={`h-5 w-5 text-hidaya-muted transition-transform duration-300 ${
-                                expanded
-                                  ? "rotate-180"
-                                  : ""
+                                expanded ? "rotate-180" : ""
                               }`}
                               aria-hidden="true"
                             />
                           </div>
                         </td>
-
                       </tr>
 
                       {/* ================= EXPANDED DETAILS ================= */}
 
                       {expanded && (
                         <tr className="bg-hidaya-tint/60">
-
                           <td
                             colSpan={isMobile ? 4 : 8}
                             className="p-3 sm:p-5"
@@ -519,9 +450,7 @@ export default function Cases() {
                                     ? selected
                                     : item
                                 }
-                                onClose={() =>
-                                  setExpandedId(null)
-                                }
+                                onClose={() => setExpandedId(null)}
                                 onEdit={() => {
                                   setSelectedCase(item);
                                   setExpandedId(null);
@@ -531,21 +460,16 @@ export default function Cases() {
                                   setSelectedCase(item);
                                   setConfirmOpen(true);
                                 }}
-                                onStatusChange={
-                                  handleStatusChange
-                                }
+                                onStatusChange={handleStatusChange}
                               />
                             </div>
                           </td>
-
                         </tr>
                       )}
-
                     </Fragment>
                   );
                 })}
               </tbody>
-
             </table>
           </div>
         </div>
